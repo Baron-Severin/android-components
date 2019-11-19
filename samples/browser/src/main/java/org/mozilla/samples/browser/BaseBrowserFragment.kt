@@ -222,6 +222,7 @@ abstract class BaseBrowserFragment : Fragment(), BackHandler {
         private const val REQUEST_CODE_DOWNLOAD_PERMISSIONS = 1
         private const val REQUEST_CODE_PROMPT_PERMISSIONS = 2
         private const val REQUEST_CODE_APP_PERMISSIONS = 3
+	interal const val MAX_REQUEST_CODE_PERMISSIONS = 3
 
         @JvmStatic
         protected fun Bundle.putSessionId(sessionId: String?) {

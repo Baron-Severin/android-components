@@ -1,4 +1,4 @@
-componentsVersion: 23.0.0
+componentsVersion: 20.0.0
 projects:
   concept-awesomebar:
     path: components/concept/awesomebar
@@ -95,6 +95,10 @@ projects:
   feature-downloads:
     path: components/feature/downloads
     description: 'Feature implementation for apps that want to use Android downloads manager.'
+    publish: true
+  feature-p2p:
+    path: components/feature/p2p
+    description: 'Feature used for peer-to-peer communication.'
     publish: true
   feature-privatemode:
     path: components/feature/privatemode

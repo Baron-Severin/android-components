@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- String for button for this device to advertise its presence to nearby devices. -->
+    <string name="mozac_feature_p2p_advertise">Advertise</string>
+
+    <!-- String for button for this device to discover the presence of nearby devices. -->
+    <string name="mozac_feature_p2p_discover">Discover</string>
+
+    <!-- String for button to send URL to neighboring device. -->
+    <string name="mozac_feature_p2p_send_url">Send URL</string>
+
+    <!-- String for button to send page to neighboring device. -->
+    <string name="mozac_feature_p2p_send_page">Send Page</string>
+
+    <!-- String for title of AlertDialog to open URL received from neighbor; %1$s will be replaced by the neighbor name -->
+    <string name="mozac_feature_p2p_open_url_title">Open URL from %1$s?</string>
+
+    <!-- String for title of AlertDialog to open page received from neighbor; %1$s will be replaced by the neighbor name -->
+    <string name="mozac_feature_p2p_open_page_title">Open page from %1$s?</string>
+
+    <!-- String for button to open content in new tab -->
+    <string name="mozac_feature_p2p_open_in_new_tab">new tab</string>
+
+    <!-- String for button to open content in current tab -->
+    <string name="mozac_feature_p2p_open_in_current_tab">current tab</string>
+</resources>
