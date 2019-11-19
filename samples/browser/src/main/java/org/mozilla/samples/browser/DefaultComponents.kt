@@ -51,8 +51,10 @@ import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.feature.webnotifications.WebNotificationFeature
 import mozilla.components.lib.fetch.httpurlconnection.HttpURLConnectionClient
+import mozilla.components.lib.nearby.NearbyConnection
 import org.mozilla.samples.browser.addons.AddOnsActivity
 import org.mozilla.samples.browser.integration.FindInPageIntegration
+import org.mozilla.samples.browser.integration.P2PIntegration
 import org.mozilla.samples.browser.request.SampleRequestInterceptor
 import java.util.concurrent.TimeUnit
 
@@ -146,6 +148,11 @@ open class DefaultComponents(private val applicationContext: Context) {
     val webAppShortcutManager by lazy { WebAppShortcutManager(applicationContext, client, webAppManifestStorage) }
     val webAppUseCases by lazy { WebAppUseCases(applicationContext, sessionManager, webAppShortcutManager) }
 
+    // P2P communication
+    val nearbyConnection by lazy {
+        NearbyConnection(applicationContext)
+    }
+
     // Intent
     val tabIntentProcessor by lazy {
         TabIntentProcessor(sessionManager, sessionUseCases.loadUrl, searchUseCases.newTabSearch)
@@ -194,6 +201,9 @@ open class DefaultComponents(private val applicationContext: Context) {
             },
             SimpleBrowserMenuItem("Find In Page") {
                 FindInPageIntegration.launch?.invoke()
+            },
+            SimpleBrowserMenuItem("P2P") {
+                P2PIntegration.launch?.invoke()
             },
             BrowserMenuDivider()
         )

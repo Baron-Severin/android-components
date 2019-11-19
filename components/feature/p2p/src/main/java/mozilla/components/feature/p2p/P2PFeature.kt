@@ -48,7 +48,7 @@ class P2PFeature(
     private val logger = Logger("P2PFeature")
     private var session: SessionState? = null
     @VisibleForTesting
-    internal lateinit var controller: P2PController
+    internal var controller: P2PController? = null
     @VisibleForTesting
     internal lateinit var extensionController: WebExtensionController
 
@@ -60,7 +60,7 @@ class P2PFeature(
 
     override fun stop() {
         super.stop()
-        controller.stop()
+        controller?.stop()
     }
 
     // PermissionsFeature implementation
@@ -106,7 +106,7 @@ class P2PFeature(
         extensionController.install(engine)
 
         controller = P2PController(store, thunk, view, tabsUseCases, sessionUseCases, P2PFeatureSender())
-        controller.start()
+        controller?.start()
     }
 
     @VisibleForTesting
@@ -131,7 +131,7 @@ class P2PFeature(
 
         override fun onPortMessage(message: Any, port: Port) {
             if (message is String) {
-                controller.onPageReadyToSend(message)
+                controller?.onPageReadyToSend(message)
             } else {
                 logger.error("P2PC message is not a string.")
             }
