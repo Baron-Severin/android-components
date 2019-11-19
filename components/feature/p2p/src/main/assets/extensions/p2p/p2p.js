@@ -17674,7 +17674,9 @@ exports.default = whenAllSettled;
 // By default, log rejections to the console when not in production mode.
 var debugEnabled = !(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production');
 var defaultRejectionHandler = debugEnabled ? function (error) {
-    console.error(error);
+ //   console.error(error);
+   console.error("An error occurred!")
+   console.error(JSON.stringify(error));
 } : function () {};
 
 // Creates a Promise that resolves when all promises passed to it have settled
@@ -17712,12 +17714,17 @@ let port = browser.runtime.connectNative("mozacP2P");
 
 port.onMessage.addListener((message) => {
   console.log("Hooray! A message arrived for me!");
-  console.log(`Message type: #{message.action}`);
+  console.log(window.documentURL)
   switch (message.action) {
     case 'get_html':
+      //port.postMessage("<html><body>Hello, world!</body></html>")
+      console.log("About to call fd.default()");
       var promise = fd.default();
+      console.log("Back from fd.default()");
       promise.then(function(result) {
+        console.log("Promise fulfilled");
         port.postMessage(result);
+        console.log("Sent back result");
       });
       break;
       default:

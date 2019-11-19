@@ -357,6 +357,7 @@ class NearbyConnection(
         val state = connectionState
         if (state is ConnectionState.ReadyToSend) {
             val payload: Payload = Payload.fromBytes(message.toByteArray(UTF_8))
+            logger.error("Sending payload of type ${payload.type}")
             connectionsClient.sendPayload(state.neighborId, payload)
             updateState(
                 ConnectionState.Sending(

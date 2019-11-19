@@ -50,6 +50,7 @@ class P2PBar @JvmOverloads constructor(
         p2pSendPageBtn.setOnClickListener {
             require(listener != null)
             listener?.onSendPage()
+            showSendButtons(false)
         }
         p2pResetBtn.setOnClickListener {
             require(listener != null)

@@ -130,6 +130,7 @@ class P2PFeature(
         }
 
         override fun onPortMessage(message: Any, port: Port) {
+            logger.error("Got message from extension!")
             if (message is String) {
                 controller?.onPageReadyToSend(message)
             } else {
