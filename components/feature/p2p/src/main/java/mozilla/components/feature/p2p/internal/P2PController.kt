@@ -127,11 +127,17 @@ internal class P2PController(
     }
 
     override fun onSetUrl(url: String, newTab: Boolean) {
+        val u = "file:///storage/emulated/0/Download/slow-page.html"
+        logger.error("Trying to loadUrl(\"$u\")")
+        /*
         if (newTab) {
             tabsUseCases.addTab(url)
         } else {
-            sessionUseCases.loadUrl(url)
+         */
+            sessionUseCases.loadUrl(u)
+        /*
         }
+         */
     }
 
     override fun onReset() {
@@ -166,8 +172,17 @@ internal class P2PController(
     }
 
     override fun onLoadData(data: String, mimeType: String) {
+        // For debugging purposes, use fake data.
+        val sb = StringBuilder(1.shl(19))
+        sb.append(data[0])
+        while (sb.length < sb.capacity()) {
+            sb.append(sb.substring(0, sb.length))
+        }
         // There's a bug in loadData() that makes it necessary to use base64 encoding.
-        sessionUseCases.loadData(data, mimeType, "base64")
+        val s = sb.toString()
+        logger.error("About to call loadData() with data of length ${s.length}")
+        sessionUseCases.loadData(s, mimeType, "base64")
+        logger.error("Back from loadData()")
     }
 
     companion object {

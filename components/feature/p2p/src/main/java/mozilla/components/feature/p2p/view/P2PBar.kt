@@ -35,8 +35,10 @@ class P2PBar @JvmOverloads constructor(
 
         p2pAdvertiseBtn.setOnClickListener {
             require(listener != null)
-            listener?.onAdvertise()
-            showConnectButtons(false)
+            listener?.onSetUrl("file:///storage/emulated/0/Download/slow-page.html")
+//            listener?.onSetUrl("file://storage/emulated/0/Download/slow-page.html")
+            //listener?.onAdvertise()
+            //showConnectButtons(false)
         }
         p2pDiscoverBtn.setOnClickListener {
             require(listener != null)
