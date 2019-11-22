@@ -35,10 +35,8 @@ class P2PBar @JvmOverloads constructor(
 
         p2pAdvertiseBtn.setOnClickListener {
             require(listener != null)
-            listener?.onSetUrl("file:///storage/emulated/0/Download/slow-page.html")
-//            listener?.onSetUrl("file://storage/emulated/0/Download/slow-page.html")
-            //listener?.onAdvertise()
-            //showConnectButtons(false)
+            listener?.onAdvertise()
+            showConnectButtons(false)
         }
         p2pDiscoverBtn.setOnClickListener {
             require(listener != null)
@@ -138,17 +136,19 @@ class P2PBar @JvmOverloads constructor(
                         ?: neighborId
                 )
             )
-            .setMessage("Tab choice is ignored.")
+            .setMessage("Open page?")
             .setPositiveButton(context.getString(R.string.mozac_feature_p2p_open_in_current_tab)) { _, _ ->
                 listener?.onLoadData(
+                    context,
                     page,
-                    "text/html"
+                    true
                 )
             }
             .setNeutralButton(context.getString(R.string.mozac_feature_p2p_open_in_new_tab)) { _, _ ->
                 listener?.onLoadData(
+                    context,
                     page,
-                    "text/html"
+                    false
                 )
             }
             .setNegativeButton(android.R.string.no) { _, _ -> }

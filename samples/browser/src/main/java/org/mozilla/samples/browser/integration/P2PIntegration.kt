@@ -13,7 +13,6 @@ import mozilla.components.feature.p2p.view.P2PView
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.lib.nearby.NearbyConnection
-import mozilla.components.support.base.feature.BackHandler
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 
@@ -21,15 +20,15 @@ import mozilla.components.support.base.feature.OnNeedToRequestPermissions
  * Functionality to integrate a peer-to-peer communication toolbar in an application.
  */
 class P2PIntegration(
-    private val store: BrowserStore,
-    private val engine: Engine,
+    store: BrowserStore,
+    engine: Engine,
     private val view: P2PView,
-    private val thunk: () -> NearbyConnection,
-    private val tabsUseCases: TabsUseCases,
-    private val sessionManager: SessionManager,
-    private val sessionUseCases: SessionUseCases,
+    thunk: () -> NearbyConnection,
+    tabsUseCases: TabsUseCases,
+    sessionManager: SessionManager,
+    sessionUseCases: SessionUseCases,
     onNeedToRequestPermissions: OnNeedToRequestPermissions
-) : LifecycleAwareFeature, BackHandler {
+) : LifecycleAwareFeature {
     val feature = P2PFeature(
         view,
         store,
@@ -47,10 +46,6 @@ class P2PIntegration(
 
     override fun stop() {
         launch = null
-    }
-
-    override fun onBackPressed(): Boolean {
-        return feature.onBackPressed()
     }
 
     private fun onClose() {

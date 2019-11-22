@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.p2p.view
 
+import android.content.Context
 import android.view.View
 
 /**
@@ -146,10 +147,11 @@ interface P2PView {
         /**
          * Load the specified data into this tab.
          *
+         * @param context the current context
          * @param data the contents of the page
-         * @param mimeType the mime type
+         * @param newTab whether to open the URL in a new tab (true) or the current one (false)
          */
-        fun onLoadData(data: String, mimeType: String = "text/html")
+        fun onLoadData(context: Context, data: String, newTab: Boolean = false)
 
         /**
          * Resets the connection to the neighbor.

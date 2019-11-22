@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.p2p.internal
 
+import android.content.Context
+import android.os.Environment
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.p2p.P2PFeature
@@ -15,6 +17,8 @@ import mozilla.components.lib.nearby.NearbyConnection
 import mozilla.components.lib.nearby.NearbyConnection.ConnectionState
 import mozilla.components.lib.nearby.NearbyConnectionObserver
 import mozilla.components.support.base.log.logger.Logger
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Controller that mediates between [P2PView] and [NearbyConnection].
@@ -127,17 +131,11 @@ internal class P2PController(
     }
 
     override fun onSetUrl(url: String, newTab: Boolean) {
-        val u = "file:///storage/emulated/0/Download/slow-page.html"
-        logger.error("Trying to loadUrl(\"$u\")")
-        /*
         if (newTab) {
             tabsUseCases.addTab(url)
         } else {
-         */
-            sessionUseCases.loadUrl(u)
-        /*
+            sessionUseCases.loadUrl(url)
         }
-         */
     }
 
     override fun onReset() {
@@ -158,7 +156,7 @@ internal class P2PController(
 
     override fun onSendPage() {
         if (cast<ConnectionState.ReadyToSend>() != null) {
-            sender.requestHtml();
+            sender.requestHtml()
         }
     }
 
@@ -171,18 +169,19 @@ internal class P2PController(
         }
     }
 
-    override fun onLoadData(data: String, mimeType: String) {
-        // For debugging purposes, use fake data.
-        val sb = StringBuilder(1.shl(19))
-        sb.append(data[0])
-        while (sb.length < sb.capacity()) {
-            sb.append(sb.substring(0, sb.length))
+    @Suppress("MaxLineLength")
+    override fun onLoadData(context: Context, data: String, newTab: Boolean) {
+        // Store data in file.
+        val filename = "temp.html" // for now, hardcode name
+        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), filename)
+        FileOutputStream(file).use {
+            it.write(data.toByteArray())
         }
-        // There's a bug in loadData() that makes it necessary to use base64 encoding.
-        val s = sb.toString()
-        logger.error("About to call loadData() with data of length ${s.length}")
-        sessionUseCases.loadData(s, mimeType, "base64")
-        logger.error("Back from loadData()")
+
+        // Load URL.
+        val url =
+            "file:///storage/emulated/0/Android/data/org.mozilla.samples.browser/files/${Environment.DIRECTORY_DOWNLOADS}/$filename"
+        onSetUrl(url, newTab)
     }
 
     companion object {

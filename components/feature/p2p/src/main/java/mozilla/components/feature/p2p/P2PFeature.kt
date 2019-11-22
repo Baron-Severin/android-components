@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.p2p
 
+import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
@@ -22,7 +23,6 @@ import mozilla.components.feature.p2p.view.P2PView
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.lib.nearby.NearbyConnection
-import mozilla.components.support.base.feature.BackHandler
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 import mozilla.components.support.base.feature.PermissionsFeature
@@ -43,8 +43,7 @@ class P2PFeature(
     private val sessionManager: SessionManager,
     override val onNeedToRequestPermissions: OnNeedToRequestPermissions,
     private val onClose: (() -> Unit)
-) : SelectionAwareSessionObserver(sessionManager), LifecycleAwareFeature, PermissionsFeature,
-    BackHandler {
+) : SelectionAwareSessionObserver(sessionManager), LifecycleAwareFeature, PermissionsFeature {
     private val logger = Logger("P2PFeature")
     private var session: SessionState? = null
     @VisibleForTesting
@@ -65,12 +64,13 @@ class P2PFeature(
 
     // PermissionsFeature implementation
 
-    private var ungrantedPermissions = NearbyConnection.PERMISSIONS.filter {
-        ContextCompat.checkSelfPermission(
-            view.asView().context,
-            it
-        ) != PackageManager.PERMISSION_GRANTED
-    }
+    private var ungrantedPermissions =
+        (NearbyConnection.PERMISSIONS + LOCAL_PERMISSIONS).filter {
+            ContextCompat.checkSelfPermission(
+                view.asView().context,
+                it
+            ) != PackageManager.PERMISSION_GRANTED
+        }
 
     private fun requestNeededPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -105,7 +105,8 @@ class P2PFeature(
         registerP2PContentMessageHandler() // this uses extensionController
         extensionController.install(engine)
 
-        controller = P2PController(store, thunk, view, tabsUseCases, sessionUseCases, P2PFeatureSender())
+        controller =
+            P2PController(store, thunk, view, tabsUseCases, sessionUseCases, P2PFeatureSender())
         controller?.start()
     }
 
@@ -118,7 +119,6 @@ class P2PFeature(
         val engineSession = sessionManager.getOrCreateEngineSession(session)
         val messageHandler = P2PContentMessageHandler(session)
         extensionController.registerContentMessageHandler(engineSession, messageHandler)
-        extensionController.registerBackgroundMessageHandler(P2PBackgroundMessageHandler(session))
     }
 
     private inner class P2PContentMessageHandler(
@@ -172,12 +172,6 @@ class P2PFeature(
         }
     }
 
-    // BackHandler implementation
-    override fun onBackPressed(): Boolean {
-        // Nothing, for now
-        return true
-    }
-
     /**
      * A class able to request an encoding of the current web page.
      */
@@ -191,7 +185,6 @@ class P2PFeature(
 
         private fun sendMessage(json: JSONObject) {
             activeSession?.let {
-                logger.error("I'm sending a ${json[ACTION_MESSAGE_KEY]} message")
                 extensionController.sendContentMessage(
                     json,
                     sessionManager.getOrCreateEngineSession(it)
@@ -205,11 +198,15 @@ class P2PFeature(
         private const val P2P_EXTENSION_ID = "mozacP2P"
         private const val P2P_EXTENSION_URL = "resource://android/assets/extensions/p2p/"
 
-        // Constants for building messages sent to the web extension:
-        // TODO comments
-        const val ACTION_MESSAGE_KEY = "action"
-        const val ACTION_GET_HTML = "get_html"
+        // Write incoming pages to file system and loadUrl() to display them.
+        // Surprisingly, that is faster than passing the page to loadData().
+        private val LOCAL_PERMISSIONS: Array<String> = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
 
-        const val ACTION_VALUE_KEY = "value"
+        // Constants for building messages sent to the web extension.
+        private const val ACTION_MESSAGE_KEY = "action"
+        private const val ACTION_GET_HTML = "get_html" // request the page's HTML
     }
 }

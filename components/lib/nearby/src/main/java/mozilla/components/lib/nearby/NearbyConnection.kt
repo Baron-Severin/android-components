@@ -435,8 +435,7 @@ class NearbyConnection(
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.ACCESS_WIFI_STATE,
-            Manifest.permission.CHANGE_WIFI_STATE,
-            Manifest.permission.READ_EXTERNAL_STORAGE // debugging slow page loads
+            Manifest.permission.CHANGE_WIFI_STATE
         )
     }
 }
