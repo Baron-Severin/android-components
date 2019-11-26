@@ -46,6 +46,9 @@ permalink: /changelog/
     * String list items were being truncated to 20, rather than 50, bytes when using
       `.set()` (rather than `.add()`). This has been corrected, but it may result
       in changes in the sent data if using string list items longer than 20 bytes.
+      
+* **browser-errorpages**
+  * Added strings for "no network connection" error pages
 
 # 22.0.0
 

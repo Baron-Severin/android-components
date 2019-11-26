@@ -45,7 +45,8 @@ object ErrorPages {
  */
 enum class ErrorType(
     @StringRes val titleRes: Int,
-    @StringRes val messageRes: Int
+    @StringRes val messageRes: Int,
+    @StringRes val buttonRes: Int = R.string.mozac_browser_errorpages_page_refresh
 ) {
     UNKNOWN(
         R.string.mozac_browser_errorpages_generic_title,
@@ -110,6 +111,11 @@ enum class ErrorType(
     ERROR_UNKNOWN_HOST(
         R.string.mozac_browser_errorpages_unknown_host_title,
         R.string.mozac_browser_errorpages_unknown_host_message
+    ),
+    ERROR_NO_INTERNET(
+        R.string.mozac_browser_errorpages_no_internet_title2,
+        R.string.mozac_browser_errorpages_no_internet_message2,
+        R.string.mozac_browser_errorpages_unknown_host_button
     ),
     ERROR_MALFORMED_URI(
         R.string.mozac_browser_errorpages_malformed_uri_title,
