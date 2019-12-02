@@ -157,5 +157,10 @@ interface P2PView {
          * Resets the connection to the neighbor.
          */
         fun onReset()
+
+        /**
+         * Handles a request to close the toolbar.
+         */
+        fun onCloseToolbar()
     }
 }

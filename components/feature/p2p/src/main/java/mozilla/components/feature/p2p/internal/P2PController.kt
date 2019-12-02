@@ -30,7 +30,8 @@ internal class P2PController(
     private val view: P2PView,
     private val tabsUseCases: TabsUseCases,
     private val sessionUseCases: SessionUseCases,
-    private val sender: P2PFeature.P2PFeatureSender
+    private val sender: P2PFeature.P2PFeatureSender,
+    private val onClose: (() -> Unit)
 ) : P2PView.Listener {
     private val logger = Logger("P2PController")
 
@@ -182,6 +183,10 @@ internal class P2PController(
         val url =
             "file:///storage/emulated/0/Android/data/org.mozilla.samples.browser/files/${Environment.DIRECTORY_DOWNLOADS}/$filename"
         onSetUrl(url, newTab)
+    }
+
+    override fun onCloseToolbar() {
+        onClose()
     }
 
     companion object {

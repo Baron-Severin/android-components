@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.android.synthetic.main.mozac_feature_p2p_view.view.*
 import mozilla.components.feature.p2p.R
@@ -56,6 +57,11 @@ class P2PBar @JvmOverloads constructor(
             require(listener != null)
             listener?.onReset()
             clear()
+        }
+        val closeButton = findViewById<AppCompatImageButton>(R.id.find_in_page_close_btn)
+        closeButton.setOnClickListener {
+            clear()
+            listener?.onCloseToolbar()
         }
     }
 

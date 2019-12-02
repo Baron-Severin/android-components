@@ -76,6 +76,16 @@
         android:text=""
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/p2pSendBtn" />
+        app:layout_constraintStart_toEndOf="@+id/p2pSendPageBtn" />
 
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/find_in_page_close_btn"
+        android:contentDescription="@string/mozac_feature_p2p_dismiss"
+        android:src="@drawable/mozac_ic_close"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/p2pStatusText"
+        app:layout_constraintTop_toTopOf="parent"/>
 </merge>

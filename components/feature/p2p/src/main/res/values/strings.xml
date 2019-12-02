@@ -26,4 +26,7 @@
 
     <!-- String for button to open content in current tab -->
     <string name="mozac_feature_p2p_open_in_current_tab">current tab</string>
+
+    <!-- String to be read by the accessibility service when focusing the dismiss button in the "p2p bar" UI. -->
+    <string name="mozac_feature_p2p_dismiss">Dismiss P2P bar</string>
 </resources>

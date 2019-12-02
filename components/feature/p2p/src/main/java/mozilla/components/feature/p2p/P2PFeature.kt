@@ -106,7 +106,7 @@ class P2PFeature(
         extensionController.install(engine)
 
         controller =
-            P2PController(store, thunk, view, tabsUseCases, sessionUseCases, P2PFeatureSender())
+            P2PController(store, thunk, view, tabsUseCases, sessionUseCases, P2PFeatureSender(), onClose)
         controller?.start()
     }
 
