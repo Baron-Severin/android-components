@@ -20,9 +20,6 @@
         android:layout_height="wrap_content"
         android:enabled="true"
         android:text="@string/mozac_feature_p2p_advertise"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/p2pDiscoverBtn"
-        app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -33,9 +30,6 @@
         android:layout_height="wrap_content"
         android:enabled="true"
         android:text="@string/mozac_feature_p2p_discover"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/guideline50"
-        app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/p2pAdvertiseBtn"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -46,9 +40,6 @@
         android:layout_height="wrap_content"
         android:enabled="false"
         android:text="@string/mozac_feature_p2p_send_url"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/p2pSendPageBtn"
-        app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -59,30 +50,16 @@
         android:layout_height="wrap_content"
         android:enabled="false"
         android:text="@string/mozac_feature_p2p_send_page"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/guideline50"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@id/p2pSendUrlBtn"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline50"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.5" />
 
     <TextView
         android:id="@+id/p2pStatusText"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:gravity="center_vertical|start"
+        android:gravity="center_vertical"
         android:text="Status"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/p2pResetBtn"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintHorizontal_weight="2"
-        app:layout_constraintStart_toEndOf="@+id/guideline50"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
@@ -94,9 +71,6 @@
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/p2pCloseBtn"
-        app:layout_constraintHorizontal_bias="1"
-        app:layout_constraintHorizontal_weight="1"
-        app:layout_constraintStart_toEndOf="@+id/p2pStatusText"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageButton
@@ -104,11 +78,7 @@
         style="@style/Mozac.Feature.P2P.CloseButton"
         android:contentDescription="@string/mozac_feature_p2p_dismiss"
         android:src="@drawable/mozac_ic_close"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias=".9"
-        app:layout_constraintStart_toEndOf="@+id/p2pResetBtn"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_weight="1"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
 </merge>
