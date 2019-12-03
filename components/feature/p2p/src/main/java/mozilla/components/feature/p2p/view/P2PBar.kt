@@ -10,11 +10,9 @@ import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.AppCompatImageButton
 import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.android.synthetic.main.mozac_feature_p2p_view.view.*
 import mozilla.components.feature.p2p.R
-import mozilla.components.support.base.log.logger.Logger
 
 private const val DEFAULT_VALUE = 0
 
@@ -29,10 +27,10 @@ class P2PBar @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), P2PView {
     override var listener: P2PView.Listener? = null
-    private val logger = Logger("P2PBar")
 
     init {
         inflate(getContext(), R.layout.mozac_feature_p2p_view, this)
+        initializeButtons(true, false)
 
         p2pAdvertiseBtn.setOnClickListener {
             require(listener != null)
@@ -58,15 +56,13 @@ class P2PBar @JvmOverloads constructor(
             listener?.onReset()
             clear()
         }
-        val closeButton = findViewById<AppCompatImageButton>(R.id.find_in_page_close_btn)
-        closeButton.setOnClickListener {
-            clear()
+        p2pCloseBtn.setOnClickListener {
             listener?.onCloseToolbar()
         }
     }
 
     override fun initializeButtons(connectB: Boolean, sendB: Boolean) {
-        showConnectButtons(connectB) // advertise, discover, !reset
+        showConnectButtons(connectB) // advertise, discover
         showSendButtons(sendB) // send URL, send page
     }
 
@@ -76,10 +72,9 @@ class P2PBar @JvmOverloads constructor(
     }
 
     internal fun showConnectButtons(b: Boolean) {
-        // Either the advertise and discover buttons are visible and enabled, or the reset button is.
         showButton(p2pAdvertiseBtn, b)
         showButton(p2pDiscoverBtn, b)
-        showButton(p2pResetBtn, !b)
+        p2pResetBtn.isEnabled = !b
     }
 
     internal fun showSendButtons(b: Boolean = true) {

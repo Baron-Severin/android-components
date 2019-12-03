@@ -9,6 +9,9 @@
     <!-- String for button for this device to discover the presence of nearby devices. -->
     <string name="mozac_feature_p2p_discover">Discover</string>
 
+    <!-- String for button to reset the connection to a neighboring device. -->
+    <string name="mozac_feature_p2p_reset">Reset</string>
+
     <!-- String for button to send URL to neighboring device. -->
     <string name="mozac_feature_p2p_send_url">Send URL</string>
 
@@ -29,4 +32,5 @@
 
     <!-- String to be read by the accessibility service when focusing the dismiss button in the "p2p bar" UI. -->
     <string name="mozac_feature_p2p_dismiss">Dismiss P2P bar</string>
+
 </resources>
