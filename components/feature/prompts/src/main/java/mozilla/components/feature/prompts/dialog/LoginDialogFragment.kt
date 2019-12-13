@@ -16,6 +16,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputEditText
@@ -34,10 +35,11 @@ private const val KEY_LOGIN = "KEY_LOGIN"
  * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication">authentication</a>
  * dialog with native dialogs.
  */
-internal class LoginDialogFragment : PromptDialogFragment() {
+internal class LoginDialogFragment private constructor(testArgs: Bundle?) : PromptDialogFragment() {
+    override val safeArguments = testArgs ?: super.safeArguments
+
     private inner class SafeArgParcelable<T : Parcelable>(private val key: String) {
         operator fun getValue(frag: LoginDialogFragment, prop: KProperty<*>): T =
-            // TODO This _should_ be guaranteed by SafeArgs.  Verify this
             safeArguments.getParcelable<T>(key)!!
 
         operator fun setValue(frag: LoginDialogFragment, prop: KProperty<*>, value: T?) {
@@ -47,14 +49,14 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
     internal var hint by SafeArgParcelable<Hint>(KEY_LOGIN_HINT)
     internal var login by SafeArgParcelable<Login>(KEY_LOGIN)
+    internal var password = login.password
+    internal var hostName = login.origin
     internal var username = login.username
         set(newUsername) {
             field = newUsername
             updateSaveButton()
         }
 
-    internal var password = login.password
-    internal var hostName = login.origin
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return BottomSheetDialog(requireContext(), this.theme).apply {
@@ -78,7 +80,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val hostView = view.findViewById<TextView>(R.id.host_name)
-        hostView.setText(hostName)
+        hostView.text = hostName
 
         val saveMessage = view.findViewById<TextView>(R.id.save_message)
 
@@ -155,7 +157,8 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         })
     }
 
-    private fun updateSaveButton() {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun updateSaveButton() {
         val updatedLogin = login.copy(username = username, password = password)
         val loginExists = feature?.loginsDelegate?.loginExists(updatedLogin) == true
         val confirmText = if (loginExists) {
@@ -169,6 +172,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
     companion object {
         /**
+         * todo
          * A builder method for creating a [LoginDialogFragment]
          * @param sessionId the id of the session for which this dialog will be created.
          * @param login
@@ -179,7 +183,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
             login: Login
         ): LoginDialogFragment {
 
-            val fragment = LoginDialogFragment()
+            val fragment = LoginDialogFragment(testArgs = null)
             val arguments = fragment.arguments ?: Bundle()
 
             with(arguments) {
@@ -190,6 +194,22 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
             fragment.arguments = arguments
             return fragment
+        }
+
+        // TODO comment that this passes args through constructor to avoid init order NPEs
+        @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        fun testInstance(
+            sessionId: String,
+            hint: Hint,
+            login: Login
+        ): LoginDialogFragment {
+            val testArgs = Bundle().apply {
+                putString(KEY_SESSION_ID, sessionId)
+                putParcelable(KEY_LOGIN_HINT, hint)
+                putParcelable(KEY_LOGIN, login)
+            }
+
+            return LoginDialogFragment(testArgs)
         }
     }
 }
