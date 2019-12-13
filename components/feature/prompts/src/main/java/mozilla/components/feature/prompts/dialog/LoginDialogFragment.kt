@@ -34,8 +34,7 @@ private const val KEY_LOGIN = "KEY_LOGIN"
  * [android.support.v4.app.DialogFragment] implementation to display a
  * dialog that allows users to save/update usernames and passwords for a given domain.
  */
-internal class LoginDialogFragment private constructor(testArgs: Bundle?) : PromptDialogFragment() {
-    override val safeArguments = testArgs ?: super.safeArguments
+internal class LoginDialogFragment : PromptDialogFragment() {
 
     private inner class SafeArgParcelable<T : Parcelable>(private val key: String) {
         operator fun getValue(frag: LoginDialogFragment, prop: KProperty<*>): T =
@@ -48,13 +47,6 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
 
     internal var hint by SafeArgParcelable<Hint>(KEY_LOGIN_HINT)
     internal var login by SafeArgParcelable<Login>(KEY_LOGIN)
-    internal var password = login.password
-    internal var hostName = login.origin
-    internal var username = login.username
-        set(newUsername) {
-            field = newUsername
-            updateSaveButton()
-        }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return BottomSheetDialog(requireContext(), this.theme).apply {
@@ -78,7 +70,7 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val hostView = view.findViewById<TextView>(R.id.host_name)
-        hostView.text = hostName
+        hostView.text = login.origin
 
         val saveMessage = view.findViewById<TextView>(R.id.save_message)
 
@@ -103,7 +95,7 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
     }
 
     private fun onPositiveClickAction() {
-        feature?.onConfirm(sessionId, login.copy(username = username, password = password))
+        feature?.onConfirm(sessionId, login)
     }
 
     private fun inflateRootView(container: ViewGroup? = null): View {
@@ -114,17 +106,18 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
         )
         bindUsername(rootView)
         bindPassword(rootView)
-        updateSaveButton()
+        updateSaveButton(login)
         return rootView
     }
 
     private fun bindUsername(view: View) {
         val usernameEditText = view.findViewById<TextInputEditText>(R.id.username_field)
 
-        usernameEditText.setText(username)
+        usernameEditText.setText(login.username)
         usernameEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
-                username = editable.toString()
+                login.username = editable.toString()
+                updateSaveButton(login)
             }
 
             override fun beforeTextChanged(
@@ -142,10 +135,10 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
     private fun bindPassword(view: View) {
         val passwordEditText = view.findViewById<TextInputEditText>(R.id.password_field)
 
-        passwordEditText.setText(password)
+        passwordEditText.setText(login.password)
         passwordEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
-                password = editable.toString()
+                login.password = editable.toString()
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) =
@@ -156,9 +149,8 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun updateSaveButton() {
-        val updatedLogin = login.copy(username = username, password = password)
-        val loginExists = feature?.loginsDelegate?.loginExists(updatedLogin) == true
+    fun updateSaveButton(login: Login) {
+        val loginExists = feature?.loginsDelegate?.loginExists(login) == true
         val confirmText = if (loginExists) {
             R.string.mozac_feature_prompt_update_confirmation
         } else {
@@ -181,7 +173,7 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
             login: Login
         ): LoginDialogFragment {
 
-            val fragment = LoginDialogFragment(testArgs = null)
+            val fragment = LoginDialogFragment()
             val arguments = fragment.arguments ?: Bundle()
 
             with(arguments) {
@@ -192,26 +184,6 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
 
             fragment.arguments = arguments
             return fragment
-        }
-
-        /**
-         * Avoids an NPE when testing by passing arguments through the fragment constructor.
-         * Production code should use [newInstance], which attaches arguments in a more standard
-         * way.
-         */
-        @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        fun testInstance(
-            sessionId: String,
-            hint: Hint,
-            login: Login
-        ): LoginDialogFragment {
-            val testArgs = Bundle().apply {
-                putString(KEY_SESSION_ID, sessionId)
-                putParcelable(KEY_LOGIN_HINT, hint)
-                putParcelable(KEY_LOGIN, login)
-            }
-
-            return LoginDialogFragment(testArgs)
         }
     }
 }
