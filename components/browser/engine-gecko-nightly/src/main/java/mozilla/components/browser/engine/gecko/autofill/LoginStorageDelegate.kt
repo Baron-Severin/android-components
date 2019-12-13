@@ -4,6 +4,7 @@
 
 package mozilla.components.browser.engine.gecko.autofill
 
+import androidx.annotation.VisibleForTesting
 import mozilla.appservices.logins.LoginsStorage
 import mozilla.components.concept.engine.Login
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
@@ -66,7 +67,7 @@ class LoginStorageDelegate(
     // Request to save or update the given login.
     @Synchronized
     override fun onLoginSave(login: Login) {
-        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return
+        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return // TODO should we fail fast if this is null?
         loginStorage.ensureUnlocked(passwordsKey)
         val guid = login.guid
         val serverPassword = guid?.let { loginStorage.get(it) }
@@ -90,30 +91,31 @@ class LoginStorageDelegate(
         loginStorage.lock()
     }
 
-    /**
-     * Will use values from [login] if they are 1) non-null and 2) non-empty.  Otherwise, will fall
-     * back to values from [this].
-     */
-    private fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
-        infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
-        infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
-
-        val hostname = login.origin orUseExisting hostname
-        val username = login.username orUseExisting username
-        val password = login.password orUseExisting password
-        val httpRealm = login.httpRealm orUseExisting httpRealm
-        val formSubmitUrl = login.formActionOrigin orUseExisting formSubmitURL
-
-        return copy(
-            hostname = hostname,
-            username = username,
-            password = password,
-            httpRealm = httpRealm,
-            formSubmitURL = formSubmitUrl
-        )
-    }
-
     companion object {
         const val PASSWORDS_KEY = "passwords"
     }
+}
+
+/**
+ * Will use values from [login] if they are 1) non-null and 2) non-empty.  Otherwise, will fall
+ * back to values from [this].
+ */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
+    infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
+    infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
+
+    val hostname = login.origin orUseExisting hostname
+    val username = login.username orUseExisting username
+    val password = login.password orUseExisting password
+    val httpRealm = login.httpRealm orUseExisting httpRealm
+    val formSubmitUrl = login.formActionOrigin orUseExisting formSubmitURL
+
+    return copy(
+        hostname = hostname,
+        username = username,
+        password = password,
+        httpRealm = httpRealm,
+        formSubmitURL = formSubmitUrl
+    )
 }
