@@ -57,7 +57,6 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
             updateSaveButton()
         }
 
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return BottomSheetDialog(requireContext(), this.theme).apply {
             setOnShowListener {

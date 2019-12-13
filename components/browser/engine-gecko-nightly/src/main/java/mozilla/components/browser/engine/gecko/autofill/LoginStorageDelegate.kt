@@ -41,8 +41,15 @@ class LoginStorageDelegate(
         val passwordsKey =
             keyStore.getString(PASSWORDS_KEY) ?: return GeckoResult.fromValue(arrayOf())
         loginStorage.ensureUnlocked(passwordsKey).also {
-            val result = GeckoResult.fromValue(loginStorage.getByHostname(domain).map {
-                Login(it.id, it.hostname, it.formSubmitURL, it.httpRealm, it.username, it.password)
+            val result = GeckoResult.fromValue(loginStorage.getByHostname(domain).map { // TODO getByHostname -> getByBaseDomain
+                Login(
+                    guid = it.id,
+                    origin = it.hostname,
+                    formActionOrigin = it.formSubmitURL,
+                    httpRealm = it.httpRealm,
+                    username = it.username ?: "", // TODO this should be nonnull after an incoming AS update
+                    password = it.password
+                )
             }.toTypedArray())
             loginStorage.lock()
             return result
@@ -82,10 +89,12 @@ class LoginStorageDelegate(
                     ServerPassword(
                         id = "", // TODO ask if this is right? Pass empty string if we don't have it?  If so, ask for it to be null
                         username = login.username,
-                        password = login.password ?: "",
-                        hostname = login.origin ?: "",
+                        password = login.password,
+                        hostname = login.origin,
                         formSubmitURL = login.formActionOrigin,
-                        httpRealm = login.httpRealm
+                        httpRealm = login.httpRealm,
+                        usernameField = "", // TODO This seems problematic. Run it by Vlad
+                        passwordField = ""
                     )
                 )
             }

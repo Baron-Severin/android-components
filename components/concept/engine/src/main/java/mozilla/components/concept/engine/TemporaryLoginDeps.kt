@@ -14,11 +14,11 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 data class Login(
     var guid: String? = null,
-    var origin: String? = null,
+    var origin: String,
     var formActionOrigin: String? = null,
     var httpRealm: String? = null,
-    var username: String? = null,
-    var password: String? = null
+    var username: String,
+    var password: String
 ) : Parcelable
 
 @Parcelize
