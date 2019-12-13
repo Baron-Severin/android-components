@@ -55,9 +55,9 @@ sealed class PromptRequest {
     ) : PromptRequest(), Dismissible
 
     /**
-     * TODO
      * Value type that represents a request for an login prompt.
-     * @
+     * @property hint a value that helps to determine the appropriate prompting behavior.
+     * @property logins a list of logins that are associated with the current domain.
      * @property onDismiss callback to let the page know the user dismissed the dialog.
      * @property onConfirm callback that is called when the user wants to save the login.
      */

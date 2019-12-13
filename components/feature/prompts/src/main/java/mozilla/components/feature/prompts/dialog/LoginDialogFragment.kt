@@ -32,8 +32,7 @@ private const val KEY_LOGIN = "KEY_LOGIN"
 
 /**
  * [android.support.v4.app.DialogFragment] implementation to display a
- * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication">authentication</a>
- * dialog with native dialogs.
+ * dialog that allows users to save/update usernames and passwords for a given domain.
  */
 internal class LoginDialogFragment private constructor(testArgs: Bundle?) : PromptDialogFragment() {
     override val safeArguments = testArgs ?: super.safeArguments
@@ -171,10 +170,10 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
 
     companion object {
         /**
-         * todo
          * A builder method for creating a [LoginDialogFragment]
          * @param sessionId the id of the session for which this dialog will be created.
-         * @param login
+         * @param hint a value that helps to determine the appropriate prompting behavior.
+         * @param login represents login information on a given domain.
          * */
         fun newInstance(
             sessionId: String,
@@ -195,7 +194,11 @@ internal class LoginDialogFragment private constructor(testArgs: Bundle?) : Prom
             return fragment
         }
 
-        // TODO comment that this passes args through constructor to avoid init order NPEs
+        /**
+         * Avoids an NPE when testing by passing arguments through the fragment constructor.
+         * Production code should use [newInstance], which attaches arguments in a more standard
+         * way.
+         */
         @VisibleForTesting(otherwise = VisibleForTesting.NONE)
         fun testInstance(
             sessionId: String,

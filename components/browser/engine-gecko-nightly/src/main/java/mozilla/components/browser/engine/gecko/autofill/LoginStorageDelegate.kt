@@ -1,8 +1,8 @@
-package mozilla.components.browser.engine.gecko.autofill
-
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package mozilla.components.browser.engine.gecko.autofill
 
 import mozilla.appservices.logins.LoginsStorage
 import mozilla.components.concept.engine.Login
@@ -18,8 +18,14 @@ internal interface LoginDelegate {
 }
 
 /**
- * [LoginDelegate] implementation.
- * App will have to instantiate this and set it on the runtime and pass in the [LoginsStorage] and [SecureAbove22Preferences] with a key that conforms to "passwords"
+ * [LoginDelegate /* TODO UPDATE */] implementation.
+ *
+ * When GV needs to update or retrieve information about stored logins, it will call into this
+ * class.
+ *
+ * App will have to instantiate this and set it on the runtime and pass in the [LoginsStorage] and
+ * [SecureAbove22Preferences] with a key that conforms to "passwords".  This lets GV delegate to
+ * the client for storage.
  */
 class LoginStorageDelegate(
     private val loginStorage: LoginsStorage,
@@ -61,46 +67,50 @@ class LoginStorageDelegate(
     @Synchronized
     override fun onLoginSave(login: Login) {
         val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return
-        loginStorage.ensureUnlocked(passwordsKey).also {
-            val guid = login.guid
-            val serverPassword = guid?.let { loginStorage.get(it) }
+        loginStorage.ensureUnlocked(passwordsKey)
+        val guid = login.guid
+        val serverPassword = guid?.let { loginStorage.get(it) }
 
-            if (guid != null && serverPassword != null) {
-                infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
-                infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
-
-                val hostname = login.origin orUseExisting serverPassword.hostname
-                val username = login.username orUseExisting serverPassword.username
-                val password = login.password orUseExisting serverPassword.password
-                val httpRealm = login.httpRealm orUseExisting serverPassword.httpRealm
-                val formSubmitUrl = login.formActionOrigin orUseExisting serverPassword.formSubmitURL
-
-                loginStorage.update(
-                    serverPassword.copy(
-                        hostname = hostname,
-                        username = username,
-                        password = password,
-                        httpRealm = httpRealm,
-                        formSubmitURL = formSubmitUrl
-                    )
+        if (guid != null && serverPassword != null) {
+            loginStorage.update(serverPassword.mergeWithLogin(login))
+        } else {
+            loginStorage.add(
+                ServerPassword(
+                    id = "", // TODO ask if this is right? Pass empty string if we don't have it?  If so, ask for it to be null
+                    username = login.username,
+                    password = login.password,
+                    hostname = login.origin,
+                    formSubmitURL = login.formActionOrigin,
+                    httpRealm = login.httpRealm,
+                    usernameField = "", // TODO This seems problematic. Run it by Vlad
+                    passwordField = ""
                 )
-            } else {
-                loginStorage.add(
-                    ServerPassword(
-                        id = "", // TODO ask if this is right? Pass empty string if we don't have it?  If so, ask for it to be null
-                        username = login.username,
-                        password = login.password,
-                        hostname = login.origin,
-                        formSubmitURL = login.formActionOrigin,
-                        httpRealm = login.httpRealm,
-                        usernameField = "", // TODO This seems problematic. Run it by Vlad
-                        passwordField = ""
-                    )
-                )
-            }
-        }.also {
-            loginStorage.lock()
+            )
         }
+        loginStorage.lock()
+    }
+
+    /**
+     * Will use values from [login] if they are 1) non-null and 2) non-empty.  Otherwise, will fall
+     * back to values from [this].
+     */
+    private fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
+        infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
+        infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
+
+        val hostname = login.origin orUseExisting hostname
+        val username = login.username orUseExisting username
+        val password = login.password orUseExisting password
+        val httpRealm = login.httpRealm orUseExisting httpRealm
+        val formSubmitUrl = login.formActionOrigin orUseExisting formSubmitURL
+
+        return copy(
+            hostname = hostname,
+            username = username,
+            password = password,
+            httpRealm = httpRealm,
+            formSubmitURL = formSubmitUrl
+        )
     }
 
     companion object {
