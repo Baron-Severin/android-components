@@ -26,13 +26,14 @@ class LoginStorageDelegate(
     private val keyStore: SecureAbove22Preferences
 ) : LoginDelegate {
     override fun onLoginUsed(login: Login) {
-        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return
-        loginStorage.ensureUnlocked(passwordsKey).also {
-            login.guid?.let {
-                loginStorage.touch(it)
-            }
-        }.also {
-            loginStorage.lock()
+        val passwordsKey = keyStore.getString(PASSWORDS_KEY)
+        val guid = login.guid
+        // TODO should this short on an empty string?
+        if (passwordsKey == null || guid == null || guid.isEmpty()) return
+        with(loginStorage) {
+            ensureUnlocked(passwordsKey)
+            touch(guid)
+            lock()
         }
     }
 

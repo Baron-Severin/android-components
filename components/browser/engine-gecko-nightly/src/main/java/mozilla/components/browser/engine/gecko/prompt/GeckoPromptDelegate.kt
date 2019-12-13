@@ -64,8 +64,9 @@ internal interface LoginStoragePrompt {
 internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSession) :
     PromptDelegate {
 
+    @Suppress("unused") // TODO remove
     fun onLoginStoragePrompt(
-        session: GeckoSession,
+        @Suppress("UNUSED_PARAMETER") /* TODO remove */ session: GeckoSession,
         prompt: LoginStoragePrompt
     ): GeckoResult<PromptResponse>? {
         val geckoResult = GeckoResult<PromptResponse>()
