@@ -20,8 +20,6 @@ import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
-import mozilla.components.concept.engine.Hint
-import mozilla.components.concept.engine.Login
 import mozilla.components.concept.engine.prompt.Choice
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.engine.prompt.PromptRequest.Alert
@@ -50,8 +48,8 @@ import mozilla.components.feature.prompts.dialog.Prompter
 import mozilla.components.feature.prompts.dialog.TextPromptDialogFragment
 import mozilla.components.feature.prompts.dialog.TimePickerDialogFragment
 import mozilla.components.feature.prompts.file.FilePicker
-import mozilla.components.feature.prompts.logins.DefaultLoginsDelegate
-import mozilla.components.feature.prompts.logins.LoginsDelegate
+import mozilla.components.feature.prompts.logins.NoopLoginValidationDelegate
+import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 import mozilla.components.feature.prompts.share.DefaultShareDelegate
 import mozilla.components.feature.prompts.share.ShareDelegate
 import mozilla.components.lib.state.ext.flowScoped
@@ -100,7 +98,7 @@ class PromptFeature private constructor(
     private var customTabId: String?,
     private val fragmentManager: FragmentManager,
     private val shareDelegate: ShareDelegate,
-    override val loginsDelegate: LoginsDelegate,
+    override val loginValidationDelegate: LoginValidationDelegate,
     onNeedToRequestPermissions: OnNeedToRequestPermissions
 ) : LifecycleAwareFeature, PermissionsFeature, Prompter {
     private var scope: CoroutineScope? = null
@@ -114,7 +112,7 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginsDelegate: LoginsDelegate = DefaultLoginsDelegate(),
+        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Activity(activity),
@@ -122,7 +120,7 @@ class PromptFeature private constructor(
         customTabId = customTabId,
         fragmentManager = fragmentManager,
         shareDelegate = shareDelegate,
-        loginsDelegate = loginsDelegate,
+        loginValidationDelegate = loginValidationDelegate,
         onNeedToRequestPermissions = onNeedToRequestPermissions
     )
 
@@ -132,7 +130,7 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginsDelegate: LoginsDelegate = DefaultLoginsDelegate(),
+        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Fragment(fragment),
@@ -140,7 +138,7 @@ class PromptFeature private constructor(
         customTabId = customTabId,
         fragmentManager = fragmentManager,
         shareDelegate = shareDelegate,
-        loginsDelegate = loginsDelegate,
+        loginValidationDelegate = loginValidationDelegate,
         onNeedToRequestPermissions = onNeedToRequestPermissions
     )
 
@@ -163,7 +161,7 @@ class PromptFeature private constructor(
         customTabId = customTabId,
         fragmentManager = fragmentManager,
         shareDelegate = DefaultShareDelegate(),
-        loginsDelegate = DefaultLoginsDelegate(),
+        loginValidationDelegate = NoopLoginValidationDelegate(),
         onNeedToRequestPermissions = onNeedToRequestPermissions
     )
 

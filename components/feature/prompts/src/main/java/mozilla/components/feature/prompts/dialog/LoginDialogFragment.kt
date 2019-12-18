@@ -150,7 +150,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun updateSaveButton(login: Login) {
-        val loginExists = feature?.loginsDelegate?.loginExists(login) == true
+        val loginExists = feature?.loginValidationDelegate?.loginExists(login) == true
         val confirmText = if (loginExists) {
             R.string.mozac_feature_prompt_update_confirmation
         } else {

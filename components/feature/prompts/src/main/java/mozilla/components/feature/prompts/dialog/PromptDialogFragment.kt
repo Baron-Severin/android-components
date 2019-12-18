@@ -5,7 +5,7 @@
 package mozilla.components.feature.prompts.dialog
 
 import androidx.fragment.app.DialogFragment
-import mozilla.components.feature.prompts.logins.LoginsDelegate
+import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 
 internal const val KEY_SESSION_ID = "KEY_SESSION_ID"
 internal const val KEY_TITLE = "KEY_TITLE"
@@ -29,7 +29,7 @@ internal abstract class PromptDialogFragment : DialogFragment() {
 
 internal interface Prompter {
 
-    val loginsDelegate: LoginsDelegate
+    val loginValidationDelegate: LoginValidationDelegate
 
     /**
      * Invoked when a dialog is dismissed. This consumes the [PromptFeature]
