@@ -49,6 +49,7 @@ typealias AC_AUTH_LEVEL = PromptRequest.Authentication.Level
 typealias AC_AUTH_METHOD = PromptRequest.Authentication.Method
 typealias AC_FILE_FACING_MODE = PromptRequest.File.FacingMode
 
+// TODO remove (GV will provide this interface)
 internal interface LoginStoragePrompt {
     var type: Int
     var hint: Hint

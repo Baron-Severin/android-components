@@ -11,6 +11,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.plus
 import mozilla.appservices.logins.DatabaseLoginsStorage
+import mozilla.appservices.logins.InvalidRecordException
 import mozilla.appservices.logins.LoginsStorage
 import mozilla.appservices.logins.MemoryLoginsStorage
 import mozilla.components.concept.sync.SyncAuthInfo
@@ -288,6 +289,13 @@ interface AsyncLoginsStorage : AutoCloseable {
      * (IO failure, rust panics, etc).
      */
     fun importLoginsAsync(logins: List<ServerPassword>): Deferred<Long>
+
+    /**
+     * TODO
+     *
+     * @rejectsWith [InvalidRecordException] TODO
+     */
+    fun ensureValid(login: ServerPassword): Deferred<Unit>
 }
 
 /**
@@ -377,6 +385,10 @@ open class AsyncLoginsStorageAdapter<T : LoginsStorage>(private val wrapped: T) 
     override fun close() {
         job.cancel()
         wrapped.close()
+    }
+
+    override fun ensureValid(login: ServerPassword): Deferred<Unit> {
+        return scope.async { wrapped.ensureValid(login) }
     }
 
     companion object {
