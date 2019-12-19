@@ -16,14 +16,21 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import mozilla.components.concept.engine.Hint
 import mozilla.components.concept.engine.Login
 import mozilla.components.feature.prompts.R
+import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 import mozilla.components.support.ktx.android.content.appName
+import mozilla.components.support.ktx.android.view.toScope
+import java.lang.RuntimeException
 import kotlin.reflect.KProperty
 import com.google.android.material.R as MaterialR
 
@@ -35,6 +42,8 @@ private const val KEY_LOGIN = "KEY_LOGIN"
  * dialog that allows users to save/update usernames and passwords for a given domain.
  */
 internal class LoginDialogFragment : PromptDialogFragment() {
+
+    var stateUpdate: Job? = null
 
     private inner class SafeArgParcelable<T : Parcelable>(private val key: String) {
         operator fun getValue(frag: LoginDialogFragment, prop: KProperty<*>): T =
@@ -87,6 +96,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         cancelButton.setOnClickListener {
             feature?.onCancel(sessionId)
         }
+        update(login)
     }
 
     override fun onCancel(dialog: DialogInterface) {
@@ -106,7 +116,6 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         )
         bindUsername(rootView)
         bindPassword(rootView)
-        updateSaveButton(login)
         return rootView
     }
 
@@ -117,7 +126,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         usernameEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
                 login.username = editable.toString()
-                updateSaveButton(login)
+                update(login)
             }
 
             override fun beforeTextChanged(
@@ -149,15 +158,38 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun updateSaveButton(login: Login) {
-        val loginExists = feature?.loginValidationDelegate?.loginExists(login) == true
-        val confirmText = if (loginExists) {
-            R.string.mozac_feature_prompt_update_confirmation
-        } else {
-            R.string.mozac_feature_prompt_save_confirmation
-        }
+    fun update(login: Login) {
+        val scope = view?.toScope() ?: return
+        stateUpdate?.cancel()
+        stateUpdate = scope.launch {
+            val result =
+                feature?.loginValidationDelegate?.validateCanPersist(login)?.await()
 
+            when(result) {
+                is LoginValidationDelegate.Result.CanBeCreated ->
+                    setViewState(confirmText = R.string.mozac_feature_prompt_save_confirmation)
+                is LoginValidationDelegate.Result.CanBeUpdated ->
+                    setViewState(confirmText = R.string.mozac_feature_prompt_update_confirmation)
+                is LoginValidationDelegate.Result.Error.EmptyPassword ->
+                    setViewState(confirmText = R.string.mozac_feature_prompt_save_confirmation,
+                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password)
+                is LoginValidationDelegate.Result.Error.NotImplemented ->
+                    throw NotImplementedError()
+                is LoginValidationDelegate.Result.Error.GeckoError ->
+                    throw RuntimeException("Unexpected problem while accessing storage. Cause: ${result.exception}")
+            }
+        }
+    }
+
+    private fun setViewState(
+        @StringRes confirmText: Int,
+        confirmButtonEnabled: Boolean = true,
+        @StringRes passwordErrorText: Int? = null
+    ) {
         view?.findViewById<Button>(R.id.save_confirm)?.text = context?.getString(confirmText)
+        view?.findViewById<Button>(R.id.save_confirm)?.isEnabled = confirmButtonEnabled
+        view?.findViewById<TextInputLayout>(R.id.password_text_input_layout)?.error =
+            passwordErrorText?.let { context?.getString(it) }
     }
 
     companion object {
