@@ -6,6 +6,7 @@ package mozilla.components.browser.engine.gecko.autofill
 
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -38,30 +39,23 @@ enum class Operation { CREATE, UPDATE }
  */
 class LoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
-    private val passwordsKey: String,
+    private val passwordsKey: () -> Deferred<String>,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : LoginDelegate {
 
     override fun onLoginUsed(login: Login) {
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
-        with(loginStorage) {
-            scope.launch {
-                try {
-                    ensureUnlocked(passwordsKey).await()
-                    touch(guid).await()
-                } finally {
-                    @Suppress("DeferredResultUnused") // No action needed
-                    lock()
-                }
+        scope.launch {
+            loginStorage.withUnlocked(passwordsKey) {
+                loginStorage.touch(guid).await()
             }
         }
     }
 
     override fun onFetchLogins(domain: String): GeckoResult<Array<Login>> {
         return runBlocking { // TODO seems like this needs to block.  verify it works
-            try {
-                loginStorage.ensureUnlocked(passwordsKey).await()
+            loginStorage.withUnlocked(passwordsKey) {
                 GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain
                     Login(
                         guid = it.id,
@@ -72,9 +66,6 @@ class LoginStorageDelegate(
                         password = it.password
                     )
                 }.toTypedArray())
-            } finally {
-                @Suppress("DeferredResultUnused") // No action needed
-                loginStorage.lock()
             }
         }
     }
@@ -82,8 +73,7 @@ class LoginStorageDelegate(
     @Synchronized
     override fun onLoginSave(login: Login) {
         scope.launch {
-            try {
-                loginStorage.ensureUnlocked(passwordsKey).await()
+            loginStorage.withUnlocked(passwordsKey) {
                 val serverPassword = login.guid?.let { loginStorage.get(it) }?.await()
 
                 when (getPersistenceOperation(login, serverPassword)) {
@@ -107,9 +97,6 @@ class LoginStorageDelegate(
                         ).await()
                     }
                 }
-            } finally {
-                @Suppress("DeferredResultUnused") // No action needed
-                loginStorage.lock()
             }
         }
     }

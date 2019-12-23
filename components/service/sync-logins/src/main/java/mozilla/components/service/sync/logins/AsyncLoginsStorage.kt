@@ -303,6 +303,25 @@ interface AsyncLoginsStorage : AutoCloseable {
      * @rejectsWith [LoginsStorageException] TODO
      */
     fun getByHostname(hostname: String): Deferred<List<ServerPassword>>
+
+    /**
+     * Run some [block] which operates over an unlocked instance of [AsyncLoginsStorage].
+     * Database is locked once [block] is done.
+     *
+     * @throws [InvalidKeyException] if the provided [key] isn't valid.
+     */
+    suspend fun <T> withUnlocked(
+        key: () -> Deferred<String>,
+        block: suspend (AsyncLoginsStorage) -> T
+    ): T {
+        ensureUnlocked(key().await()).await()
+
+        try {
+            return block(this)
+        } finally {
+            ensureLocked().await()
+        }
+    }
 }
 
 /**
@@ -467,13 +486,6 @@ data class SyncableLoginsStore(
      * @throws [InvalidKeyException] if the provided [key] isn't valid.
      */
     suspend fun <T> withUnlocked(block: suspend (AsyncLoginsStorage) -> T): T {
-
-        store.ensureUnlocked(key().await()).await()
-
-        try {
-            return block(store)
-        } finally {
-            store.ensureLocked().await()
-        }
+        return store.withUnlocked(key, block)
     }
 }
