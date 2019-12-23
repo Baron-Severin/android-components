@@ -35,7 +35,6 @@ class LoginStorageDelegate(
     override fun onLoginUsed(login: Login) {
         val passwordsKey = keyStore.getString(PASSWORDS_KEY)
         val guid = login.guid
-        // TODO should this short on an empty string?
         if (passwordsKey == null || guid == null || guid.isEmpty()) return
         with(loginStorage) {
             ensureUnlocked(passwordsKey)
@@ -63,27 +62,37 @@ class LoginStorageDelegate(
         }
     }
 
-    // TODO double check that we're locking correctly.  Also, does this need to be synchronized?
-    // Request to save or update the given login.
     @Synchronized
     override fun onLoginSave(login: Login) {
-        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return // TODO should we fail fast if this is null?
+        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return
+        // TODO wrap unlocking in try/finally
         loginStorage.ensureUnlocked(passwordsKey)
         val guid = login.guid
         val serverPassword = guid?.let { loginStorage.get(it) }
+
+        /*
+        TODO handle (at least) 4 cases here
+
+        - update an existing record with a guid
+        - save a new record (no guid)
+        - save a new record (has a guid, but user changed the username, so it's a new login now)
+        - update an existing record with a guid, which had an empty username, and user added a username
+         */
 
         if (guid != null && serverPassword != null) {
             loginStorage.update(serverPassword.mergeWithLogin(login))
         } else {
             loginStorage.add(
                 ServerPassword(
-                    id = "", // TODO ask if this is right? Pass empty string if we don't have it?  If so, ask for it to be null
+                    // Underlying Rust code will generate a new GUID
+                    id = "",
                     username = login.username,
                     password = login.password,
                     hostname = login.origin,
                     formSubmitURL = login.formActionOrigin,
                     httpRealm = login.httpRealm,
-                    usernameField = "", // TODO This seems problematic. Run it by Vlad
+                    // These two fields are allowed to be empty when information is not available
+                    usernameField = "",
                     passwordField = ""
                 )
             )
