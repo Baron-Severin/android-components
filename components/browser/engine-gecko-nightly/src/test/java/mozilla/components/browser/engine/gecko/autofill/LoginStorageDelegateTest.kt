@@ -1,140 +1,77 @@
 package mozilla.components.browser.engine.gecko.autofill
 
-import mozilla.appservices.logins.LoginsStorage
-import mozilla.components.browser.engine.gecko.autofill.LoginStorageDelegate.Companion.PASSWORDS_KEY
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestCoroutineScope
 import mozilla.components.concept.engine.Login
-import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.service.sync.logins.AsyncLoginsStorage
 import mozilla.components.service.sync.logins.ServerPassword
 import mozilla.components.support.test.anyNonNull
 import mozilla.components.support.test.mock
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
-import org.mockito.MockitoAnnotations
 
+@ExperimentalCoroutinesApi
 class LoginStorageDelegateTest {
 
-    @Mock private lateinit var keystore: SecureAbove22Preferences
-    private lateinit var loginsStorage: LoginsStorage
+    private lateinit var loginsStorage: AsyncLoginsStorage
     private lateinit var delegate: LoginStorageDelegate
+    private lateinit var scope: TestCoroutineScope
 
     @Before
     fun before() {
-        MockitoAnnotations.initMocks(this)
         loginsStorage = mockLoginsStorage()
-        delegate = LoginStorageDelegate(loginsStorage, keystore)
+        scope = TestCoroutineScope()
+        delegate = LoginStorageDelegate(loginsStorage, "password", scope)
     }
 
     @Test
-    fun `WHEN onLoginUsed is passed null values THEN loginStorage should be locked`() {
-        mockSavedKey(false)
-        var login = createLogin("guid")
+    fun `WHEN onLoginsUsed is used THEN loginStorage should be touched`() {
+        scope.launch {
+            val login = createLogin("guid")
 
-        delegate.onLoginUsed(login)
-        assertTrue(loginsStorage.isLocked())
-
-        mockSavedKey(true)
-        login = createLogin(null)
-
-        delegate.onLoginUsed(login)
-        assertTrue(loginsStorage.isLocked())
-
-        mockSavedKey(true)
-        login = createLogin(guid = "") // should this short on an empty string?
-
-        delegate.onLoginUsed(login)
-        assertTrue(loginsStorage.isLocked())
+            delegate.onLoginUsed(login)
+            verify(loginsStorage, times(1)).touch(anyNonNull()).await()
+        }
     }
 
     @Test
-    fun `WHEN onLoginUsed is passed null values THEN loginStorage should not be touched`() {
-        `when`(keystore.getString(PASSWORDS_KEY)).thenReturn(null)
-        var login = createLogin("guid")
+    fun `WHEN guid is null or empty THEN should create a new record`() {
+        val serverPassword = createServerPassword()
 
-        delegate.onLoginUsed(login)
-        verify(loginsStorage, times(0)).touch(anyNonNull())
+        val fromNull = getPersistenceOperation(createLogin(guid = null), serverPassword)
+        val fromEmpty = getPersistenceOperation(createLogin(guid = ""), serverPassword)
 
-        mockSavedKey(true)
-        login = createLogin(null)
-
-        delegate.onLoginUsed(login)
-        verify(loginsStorage, times(0)).touch(anyNonNull())
-
-        mockSavedKey(true)
-        login = createLogin(guid = "") // should this short on an empty string?
-
-        delegate.onLoginUsed(login)
-        verify(loginsStorage, times(0)).touch(anyNonNull())
+        assertEquals(Operation.CREATE, fromNull)
+        assertEquals(Operation.CREATE, fromEmpty)
     }
 
     @Test
-    fun `WHEN onLoginsUsed is passed good values THEN loginStorage should be touched`() {
-        mockSavedKey(true)
-        val login = createLogin("guid")
+    fun `WHEN guid matches existing record AND saved record has an empty username THEN should update existing record`() {
+        val serverPassword = createServerPassword(id = "1", username = "")
+        val login = createLogin(guid = "1")
 
-        delegate.onLoginUsed(login)
-        verify(loginsStorage, times(1)).touch(anyNonNull())
+        assertEquals(Operation.UPDATE, getPersistenceOperation(login, serverPassword))
     }
 
     @Test
-    fun `WHEN onLoginsUsed is passed good values THEN loginStorage should be locked`() {
-        mockSavedKey(true)
-        val login = createLogin("guid")
+    fun `WHEN guid matches existing record AND new username is different from saved THEN should create new record`() {
+        val serverPassword = createServerPassword(id = "1", username = "old")
+        val login = createLogin(guid = "1", username = "new")
 
-        delegate.onLoginUsed(login)
-        assertTrue(loginsStorage.isLocked())
+        assertEquals(Operation.CREATE, getPersistenceOperation(login, serverPassword))
     }
 
     @Test
-    fun `GIVEN keystore pass is invalid WHEN onLoginSave loginStorage should be unchanged`() {
-        mockSavedKey(false)
-        val login = createLogin(guid = "guid")
+    fun `WHEN guid and username match THEN update existing record`() {
+        val serverPassword = createServerPassword(id = "1", username = "username")
+        val login = createLogin(guid = "1", username = "username")
 
-        delegate.onLoginSave(login)
-
-        verify(loginsStorage, times(0)).update(anyNonNull())
-        verify(loginsStorage, times(0)).add(anyNonNull())
-    }
-
-    @Test
-    fun `GIVEN guid is null WHEN onLoginSave THEN a new login should be added`() {
-        mockSavedKey(true)
-        val login = createLogin(guid = null)
-
-        delegate.onLoginSave(login)
-
-        verify(loginsStorage, times(0)).update(anyNonNull())
-        verify(loginsStorage, times(1)).add(anyNonNull())
-    }
-
-    @Test
-    fun `GIVEN guid is nonnull AND no password is associated with that guid WHEN onLoginSave THEN a new login should be added`() {
-        mockSavedKey(true)
-        val login = createLogin(guid = "guid")
-        `when`(loginsStorage.get(login.guid!!)).thenReturn(null as ServerPassword?)
-
-        delegate.onLoginSave(login)
-
-        verify(loginsStorage, times(0)).update(anyNonNull())
-        verify(loginsStorage, times(1)).add(anyNonNull())
-    }
-
-    @Test
-    fun `GIVEN guid is nonnull AND guid is associated with a ServerPassword WHEN onLoginSave THEN update should be called`() {
-        mockSavedKey(true)
-        val login = createLogin(guid = "guid")
-        val serverPassword = ServerPassword("", "", "", "")
-        `when`(loginsStorage.get(login.guid!!)).thenReturn(serverPassword)
-
-        delegate.onLoginSave(login)
-
-        verify(loginsStorage, times(1)).update(anyNonNull())
-        verify(loginsStorage, times(0)).add(anyNonNull())
+        assertEquals(Operation.UPDATE, getPersistenceOperation(login, serverPassword))
     }
 
     @Test
@@ -229,16 +166,10 @@ class LoginStorageDelegateTest {
 
         assertEquals(expected, serverPassword.mergeWithLogin(login))
     }
-
-    private fun mockSavedKey(validKeySaved: Boolean) {
-        val saved = if (validKeySaved) PASSWORDS_KEY else null
-        `when`(keystore.getString(PASSWORDS_KEY)).thenReturn(saved)
-    }
-
 }
 
-fun mockLoginsStorage(): LoginsStorage {
-    val loginsStorage = mock<LoginsStorage>()
+fun mockLoginsStorage(): AsyncLoginsStorage {
+    val loginsStorage = mock<AsyncLoginsStorage>()
     var isLocked = true
 
     fun <T> setLockedWhen(on: T, newIsLocked: Boolean) {
@@ -262,9 +193,22 @@ fun mockLoginsStorage(): LoginsStorage {
     return loginsStorage
 }
 
-fun createLogin(guid: String?) = Login(
+fun createLogin(guid: String?, username: String = "username") = Login(
     guid = guid,
-    username = "username",
+    username = username,
     password = "password",
     origin = "origin"
+)
+
+fun createServerPassword(
+    id: String = "id",
+    password: String = "password",
+    username: String = "username"
+) = ServerPassword(
+    id = id,
+    hostname = "hostname",
+    password = password,
+    username = username,
+    httpRealm = "httpRealm",
+    formSubmitURL = "formsubmiturl"
 )

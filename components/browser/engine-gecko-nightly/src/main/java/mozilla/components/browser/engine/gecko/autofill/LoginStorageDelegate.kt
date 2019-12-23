@@ -23,6 +23,9 @@ internal interface LoginDelegate {
     fun onLoginSave(login: Login)
 }
 
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+enum class Operation { CREATE, UPDATE }
+
 /**
  * [LoginDelegate /* TODO UPDATE */] implementation.
  *
@@ -35,15 +38,15 @@ internal interface LoginDelegate {
  */
 class LoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
-//    private val keyStore: SecureAbove22Preferences
-    private val passwordsKey: String
+    private val passwordsKey: String,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : LoginDelegate {
+
     override fun onLoginUsed(login: Login) {
-//        val passwordsKey = keyStore.getString(PASSWORDS_KEY)
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
         with(loginStorage) {
-            CoroutineScope(Dispatchers.IO).launch {
+            scope.launch {
                 try {
                     ensureUnlocked(passwordsKey).await()
                     touch(guid).await()
@@ -56,7 +59,7 @@ class LoginStorageDelegate(
     }
 
     override fun onFetchLogins(domain: String): GeckoResult<Array<Login>> {
-        return runBlocking { // TODO doesn't seem like we have any other option here.  verify it works
+        return runBlocking { // TODO seems like this needs to block.  verify it works
             try {
                 loginStorage.ensureUnlocked(passwordsKey).await()
                 GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain
@@ -73,44 +76,36 @@ class LoginStorageDelegate(
                 @Suppress("DeferredResultUnused") // No action needed
                 loginStorage.lock()
             }
-
         }
     }
 
     @Synchronized
     override fun onLoginSave(login: Login) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             try {
                 loginStorage.ensureUnlocked(passwordsKey).await()
-                val guid = login.guid
-                val serverPassword = guid?.let { loginStorage.get(it) }?.await()
+                val serverPassword = login.guid?.let { loginStorage.get(it) }?.await()
 
-                /*
-                TODO handle (at least) 4 cases here
-
-                - update an existing record with a guid
-                - save a new record (no guid)
-                - save a new record (has a guid, but user changed the username, so it's a new login now)
-                - update an existing record with a guid, which had an empty username, and user added a username
-                 */
-
-                if (guid != null && serverPassword != null) {
-                    loginStorage.update(serverPassword.mergeWithLogin(login)).await()
-                } else {
-                    loginStorage.add(
-                        ServerPassword(
-                            // Underlying Rust code will generate a new GUID
-                            id = "",
-                            username = login.username,
-                            password = login.password,
-                            hostname = login.origin,
-                            formSubmitURL = login.formActionOrigin,
-                            httpRealm = login.httpRealm,
-                            // These two fields are allowed to be empty when information is not available
-                            usernameField = "",
-                            passwordField = ""
-                        )
-                    ).await()
+                when (getPersistenceOperation(login, serverPassword)) {
+                    Operation.UPDATE -> {
+                        serverPassword?.let { loginStorage.update(it.mergeWithLogin(login)).await() }
+                    }
+                    Operation.CREATE -> {
+                        loginStorage.add(
+                            ServerPassword(
+                                // Underlying Rust code will generate a new GUID
+                                id = "",
+                                username = login.username,
+                                password = login.password,
+                                hostname = login.origin,
+                                formSubmitURL = login.formActionOrigin,
+                                httpRealm = login.httpRealm,
+                                // These two fields are allowed to be empty when information is not available
+                                usernameField = "",
+                                passwordField = ""
+                            )
+                        ).await()
+                    }
                 }
             } finally {
                 @Suppress("DeferredResultUnused") // No action needed
@@ -118,10 +113,19 @@ class LoginStorageDelegate(
             }
         }
     }
+}
 
-    companion object {
-        const val PASSWORDS_KEY = "passwords"
-    }
+/**
+ * Returns whether an existing login record should be [UPDATE]d or a new one [CREATE]d, based
+ * on the saved [ServerPassword] and new [Login].
+ */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Operation = when {
+    newLogin.guid.isNullOrEmpty() || savedLogin == null -> Operation.CREATE
+    // This means a password was saved for this site with a blank username. Update that record
+    savedLogin.username.isNullOrEmpty() -> Operation.UPDATE
+    newLogin.username != savedLogin.username -> Operation.CREATE
+    else -> Operation.UPDATE
 }
 
 /**
