@@ -5,9 +5,14 @@
 package mozilla.components.browser.engine.gecko.autofill
 
 import androidx.annotation.VisibleForTesting
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mozilla.appservices.logins.LoginsStorage
 import mozilla.components.concept.engine.Login
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.service.sync.logins.AsyncLoginsStorage
 import mozilla.components.service.sync.logins.ServerPassword
 import org.mozilla.geckoview.GeckoResult
 
@@ -29,75 +34,89 @@ internal interface LoginDelegate {
  * the client for storage.
  */
 class LoginStorageDelegate(
-    private val loginStorage: LoginsStorage,
-    private val keyStore: SecureAbove22Preferences
+    private val loginStorage: AsyncLoginsStorage,
+//    private val keyStore: SecureAbove22Preferences
+    private val passwordsKey: String
 ) : LoginDelegate {
     override fun onLoginUsed(login: Login) {
-        val passwordsKey = keyStore.getString(PASSWORDS_KEY)
+//        val passwordsKey = keyStore.getString(PASSWORDS_KEY)
         val guid = login.guid
-        if (passwordsKey == null || guid == null || guid.isEmpty()) return
+        if (guid == null || guid.isEmpty()) return
         with(loginStorage) {
-            ensureUnlocked(passwordsKey)
-            touch(guid)
-            lock()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    ensureUnlocked(passwordsKey).await()
+                    touch(guid).await()
+                } finally {
+                    @Suppress("DeferredResultUnused") // No action needed
+                    lock()
+                }
+            }
         }
     }
 
     override fun onFetchLogins(domain: String): GeckoResult<Array<Login>> {
-        val passwordsKey =
-            keyStore.getString(PASSWORDS_KEY) ?: return GeckoResult.fromValue(arrayOf())
-        loginStorage.ensureUnlocked(passwordsKey).also {
-            val result = GeckoResult.fromValue(loginStorage.getByHostname(domain).map { // TODO getByHostname -> getByBaseDomain
-                Login(
-                    guid = it.id,
-                    origin = it.hostname,
-                    formActionOrigin = it.formSubmitURL,
-                    httpRealm = it.httpRealm,
-                    username = it.username ?: "", // TODO this should be nonnull after an incoming AS update
-                    password = it.password
-                )
-            }.toTypedArray())
-            loginStorage.lock()
-            return result
+        return runBlocking { // TODO doesn't seem like we have any other option here.  verify it works
+            try {
+                loginStorage.ensureUnlocked(passwordsKey).await()
+                GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain
+                    Login(
+                        guid = it.id,
+                        origin = it.hostname,
+                        formActionOrigin = it.formSubmitURL,
+                        httpRealm = it.httpRealm,
+                        username = it.username ?: "", // TODO this should be nonnull after an incoming AS update
+                        password = it.password
+                    )
+                }.toTypedArray())
+            } finally {
+                @Suppress("DeferredResultUnused") // No action needed
+                loginStorage.lock()
+            }
+
         }
     }
 
     @Synchronized
     override fun onLoginSave(login: Login) {
-        val passwordsKey = keyStore.getString(PASSWORDS_KEY) ?: return
-        // TODO wrap unlocking in try/finally
-        loginStorage.ensureUnlocked(passwordsKey)
-        val guid = login.guid
-        val serverPassword = guid?.let { loginStorage.get(it) }
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                loginStorage.ensureUnlocked(passwordsKey).await()
+                val guid = login.guid
+                val serverPassword = guid?.let { loginStorage.get(it) }?.await()
 
-        /*
-        TODO handle (at least) 4 cases here
+                /*
+                TODO handle (at least) 4 cases here
 
-        - update an existing record with a guid
-        - save a new record (no guid)
-        - save a new record (has a guid, but user changed the username, so it's a new login now)
-        - update an existing record with a guid, which had an empty username, and user added a username
-         */
+                - update an existing record with a guid
+                - save a new record (no guid)
+                - save a new record (has a guid, but user changed the username, so it's a new login now)
+                - update an existing record with a guid, which had an empty username, and user added a username
+                 */
 
-        if (guid != null && serverPassword != null) {
-            loginStorage.update(serverPassword.mergeWithLogin(login))
-        } else {
-            loginStorage.add(
-                ServerPassword(
-                    // Underlying Rust code will generate a new GUID
-                    id = "",
-                    username = login.username,
-                    password = login.password,
-                    hostname = login.origin,
-                    formSubmitURL = login.formActionOrigin,
-                    httpRealm = login.httpRealm,
-                    // These two fields are allowed to be empty when information is not available
-                    usernameField = "",
-                    passwordField = ""
-                )
-            )
+                if (guid != null && serverPassword != null) {
+                    loginStorage.update(serverPassword.mergeWithLogin(login)).await()
+                } else {
+                    loginStorage.add(
+                        ServerPassword(
+                            // Underlying Rust code will generate a new GUID
+                            id = "",
+                            username = login.username,
+                            password = login.password,
+                            hostname = login.origin,
+                            formSubmitURL = login.formActionOrigin,
+                            httpRealm = login.httpRealm,
+                            // These two fields are allowed to be empty when information is not available
+                            usernameField = "",
+                            passwordField = ""
+                        )
+                    ).await()
+                }
+            } finally {
+                @Suppress("DeferredResultUnused") // No action needed
+                loginStorage.lock()
+            }
         }
-        loginStorage.lock()
     }
 
     companion object {

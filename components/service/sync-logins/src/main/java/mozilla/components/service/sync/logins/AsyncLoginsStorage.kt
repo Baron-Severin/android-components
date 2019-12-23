@@ -294,6 +294,13 @@ interface AsyncLoginsStorage : AutoCloseable {
      * @rejectsWith [InvalidRecordException] TODO
      */
     fun ensureValid(login: ServerPassword): Deferred<Unit>
+
+    /**
+     * TODO
+     *
+     * @rejectsWith [LoginsStorageException] TODO
+     */
+    fun getByHostname(hostname: String): Deferred<List<ServerPassword>>
 }
 
 /**
@@ -387,6 +394,10 @@ open class AsyncLoginsStorageAdapter<T : LoginsStorage>(private val wrapped: T) 
 
     override fun ensureValid(login: ServerPassword): Deferred<Unit> {
         return scope.async { wrapped.ensureValid(login) }
+    }
+
+    override fun getByHostname(hostname: String): Deferred<List<ServerPassword>> {
+        return scope.async { wrapped.getByHostname(hostname) }
     }
 
     companion object {
