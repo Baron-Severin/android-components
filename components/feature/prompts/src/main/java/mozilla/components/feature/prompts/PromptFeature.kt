@@ -369,6 +369,7 @@ class PromptFeature private constructor(
                 LoginDialogFragment.newInstance(
                     sessionId = session.id,
                     hint = promptRequest.hint,
+                    // For v1, we only handle a single login and drop all others on the floor
                     login = promptRequest.logins[0]
                 )
             }
