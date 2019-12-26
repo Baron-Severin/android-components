@@ -6,8 +6,7 @@ package mozilla.components.concept.engine.prompt
 
 import android.content.Context
 import android.net.Uri
-import mozilla.components.concept.engine.Hint
-import mozilla.components.concept.engine.Login
+import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.concept.engine.prompt.PromptRequest.Authentication.Level
 import mozilla.components.concept.engine.prompt.PromptRequest.Authentication.Method
 import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection.Type
@@ -62,8 +61,8 @@ sealed class PromptRequest {
      * @property onConfirm callback that is called when the user wants to save the login.
      */
     data class LoginPrompt(
-        val hint: Hint,
-        val logins: Array<Login>,
+        val hint: Int,
+        val logins: List<Login>,
         override val onDismiss: () -> Unit,
         val onConfirm: (Login) -> Unit
     ) : PromptRequest(), Dismissible

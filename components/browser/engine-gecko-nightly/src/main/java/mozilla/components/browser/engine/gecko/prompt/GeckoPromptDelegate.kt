@@ -10,8 +10,9 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.annotation.VisibleForTesting
 import mozilla.components.browser.engine.gecko.GeckoEngineSession
-import mozilla.components.concept.engine.Hint
-import mozilla.components.concept.engine.Login
+import mozilla.components.browser.engine.gecko.autofill.toLogin
+import mozilla.components.browser.engine.gecko.autofill.toLoginEntry
+import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.concept.engine.prompt.Choice
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.engine.prompt.PromptRequest.MenuChoice
@@ -30,6 +31,7 @@ import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.MON
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.TIME
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.WEEK
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.PromptResponse
+import org.mozilla.geckoview.LoginStorage
 import java.io.FileOutputStream
 import java.io.IOException
 import java.security.InvalidParameterException
@@ -49,15 +51,6 @@ typealias AC_AUTH_LEVEL = PromptRequest.Authentication.Level
 typealias AC_AUTH_METHOD = PromptRequest.Authentication.Method
 typealias AC_FILE_FACING_MODE = PromptRequest.File.FacingMode
 
-// TODO remove (GV will provide this interface)
-internal interface LoginStoragePrompt {
-    var type: Int
-    var hint: Hint
-    var logins: Array<Login>
-    fun confirm(login: Login?): PromptResponse?
-    fun dismiss(): PromptResponse?
-}
-
 /**
  * Gecko-based PromptDelegate implementation.
  */
@@ -65,20 +58,20 @@ internal interface LoginStoragePrompt {
 internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSession) :
     PromptDelegate {
 
-    @Suppress("unused") // TODO remove
-    fun onLoginStoragePrompt(
-        @Suppress("UNUSED_PARAMETER") /* TODO remove */ session: GeckoSession,
-        prompt: LoginStoragePrompt
+    override fun onLoginStoragePrompt(
+        session: GeckoSession,
+        prompt: PromptDelegate.LoginStoragePrompt
     ): GeckoResult<PromptResponse>? {
         val geckoResult = GeckoResult<PromptResponse>()
-        val onConfirmSave: (Login?) -> Unit = { login ->
-            geckoResult.complete(prompt.confirm(login))
+        val onConfirmSave: (Login) -> Unit = { login ->
+            geckoResult.complete(prompt.confirm(login.toLoginEntry()))
         }
+
         geckoEngineSession.notifyObservers {
             onPromptRequest(
                 PromptRequest.LoginPrompt(
                     hint = prompt.hint,
-                    logins = prompt.logins,
+                    logins = prompt.logins.map { it.toLogin() },
                     onConfirm = onConfirmSave,
                     onDismiss = { prompt.dismiss() }
                 )

@@ -11,24 +11,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mozilla.appservices.logins.LoginsStorage
-import mozilla.components.concept.engine.Login
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
 import mozilla.components.service.sync.logins.ServerPassword
 import org.mozilla.geckoview.GeckoResult
+import org.mozilla.geckoview.LoginStorage
 
-// Temporary Interface before lands in GV
+/**
+ * Defines methods that will be implemented by [LoginStorage.Delegate] in future versions.
+ *
+ * TODO remove these once the GV API is complete.
+ */
 internal interface LoginDelegate {
-    fun onLoginUsed(login: Login)
-    fun onFetchLogins(domain: String): GeckoResult<Array<Login>>
-    fun onLoginSave(login: Login)
+    fun onLoginUsed(login: LoginStorage.LoginEntry)
+    fun onLoginSave(login: LoginStorage.LoginEntry)
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 enum class Operation { CREATE, UPDATE }
 
 /**
- * [LoginDelegate /* TODO UPDATE */] implementation.
+ * [LoginStorage.Delegate] implementation.
  *
  * When GV needs to update or retrieve information about stored logins, it will call into this
  * class.
@@ -41,9 +44,9 @@ class LoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
     private val passwordsKey: () -> Deferred<String>,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
-) : LoginDelegate {
+) : LoginDelegate, LoginStorage.Delegate {
 
-    override fun onLoginUsed(login: Login) {
+    override fun onLoginUsed(login: LoginStorage.LoginEntry) {
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
         scope.launch {
@@ -53,25 +56,25 @@ class LoginStorageDelegate(
         }
     }
 
-    override fun onFetchLogins(domain: String): GeckoResult<Array<Login>> {
+    override fun onLoginFetch(domain: String): GeckoResult<Array<LoginStorage.LoginEntry>>? {
         return runBlocking { // TODO seems like this needs to block.  verify it works
             loginStorage.withUnlocked(passwordsKey) {
-                GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain
-                    Login(
-                        guid = it.id,
-                        origin = it.hostname,
-                        formActionOrigin = it.formSubmitURL,
-                        httpRealm = it.httpRealm,
-                        username = it.username ?: "", // TODO this should be nonnull after an incoming AS update
-                        password = it.password
-                    )
+                GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain (after AS update)
+                    LoginStorage.LoginEntry.Builder()
+                        .guid(it.id)
+                        .origin(it.hostname)
+                        .formActionOrigin(it.formSubmitURL)
+                        .httpRealm(it.httpRealm)
+                        .username(it.username ?: "") // TODO this will be nonnull after an incoming AS update
+                        .password(it.password)
+                        .build()
                 }.toTypedArray())
             }
         }
     }
 
     @Synchronized
-    override fun onLoginSave(login: Login) {
+    override fun onLoginSave(login: LoginStorage.LoginEntry) {
         scope.launch {
             loginStorage.withUnlocked(passwordsKey) {
                 val serverPassword = login.guid?.let { loginStorage.get(it) }?.await()
@@ -90,7 +93,8 @@ class LoginStorageDelegate(
                                 hostname = login.origin,
                                 formSubmitURL = login.formActionOrigin,
                                 httpRealm = login.httpRealm,
-                                // These two fields are allowed to be empty when information is not available
+                                // usernameField & passwordField are allowed to be empty when
+                                // information is not available
                                 usernameField = "",
                                 passwordField = ""
                             )
@@ -107,7 +111,7 @@ class LoginStorageDelegate(
  * on the saved [ServerPassword] and new [Login].
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Operation = when {
+fun getPersistenceOperation(newLogin: LoginStorage.LoginEntry, savedLogin: ServerPassword?): Operation = when {
     newLogin.guid.isNullOrEmpty() || savedLogin == null -> Operation.CREATE
     // This means a password was saved for this site with a blank username. Update that record
     savedLogin.username.isNullOrEmpty() -> Operation.UPDATE
@@ -120,7 +124,7 @@ fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Opera
  * back to values from [this].
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
+fun ServerPassword.mergeWithLogin(login: LoginStorage.LoginEntry): ServerPassword {
     infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
     infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
 
