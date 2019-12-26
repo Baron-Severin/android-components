@@ -57,11 +57,15 @@ class LoginStorageDelegate(
     }
 
     override fun onLoginFetch(domain: String): GeckoResult<Array<LoginStorage.LoginEntry>>? {
+        fun Array<LoginStorage.LoginEntry>.toGeckoResult() =
+            GeckoResult.fromValue(this)
+
         return runBlocking { // TODO seems like this needs to block.  verify it works
             loginStorage.withUnlocked(passwordsKey) {
-                GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain (after AS update)
-                    it.toLoginEntry()
-                }.toTypedArray())
+                loginStorage.getByHostname(domain).await() // TODO getByHostname -> getByBaseDomain (after AS update)
+                    .map { it.toLoginEntry() }
+                    .toTypedArray()
+                    .toGeckoResult()
             }
         }
     }
