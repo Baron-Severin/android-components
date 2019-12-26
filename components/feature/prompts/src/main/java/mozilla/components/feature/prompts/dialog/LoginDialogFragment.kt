@@ -7,7 +7,6 @@ package mozilla.components.feature.prompts.dialog
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
-import android.os.Parcelable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -24,8 +23,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import mozilla.components.concept.engine.Hint
-import mozilla.components.concept.engine.Login
+import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.feature.prompts.R
 import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 import mozilla.components.support.ktx.android.content.appName
@@ -35,7 +33,12 @@ import kotlin.reflect.KProperty
 import com.google.android.material.R as MaterialR
 
 private const val KEY_LOGIN_HINT = "KEY_LOGIN_HINT"
-private const val KEY_LOGIN = "KEY_LOGIN"
+private const val KEY_LOGIN_USERNAME = "KEY_LOGIN_USERNAME"
+private const val KEY_LOGIN_PASSWORD = "KEY_LOGIN_PASSWORD"
+private const val KEY_LOGIN_GUID = "KEY_LOGIN_GUID"
+private const val KEY_LOGIN_ORIGIN = "KEY_LOGIN_ORIGIN"
+private const val KEY_LOGIN_FORM_ACTION_ORIGIN = "KEY_LOGIN_FORM_ACTION_ORIGIN"
+private const val KEY_LOGIN_HTTP_REALM = "KEY_LOGIN_HTTP_REALM"
 
 /**
  * [android.support.v4.app.DialogFragment] implementation to display a
@@ -43,19 +46,24 @@ private const val KEY_LOGIN = "KEY_LOGIN"
  */
 internal class LoginDialogFragment : PromptDialogFragment() {
 
-    var stateUpdate: Job? = null
+    private inner class SafeArgString(private val key: String) {
+        operator fun getValue(frag: LoginDialogFragment, prop: KProperty<*>): String =
+            safeArguments.getString(key)!!
 
-    private inner class SafeArgParcelable<T : Parcelable>(private val key: String) {
-        operator fun getValue(frag: LoginDialogFragment, prop: KProperty<*>): T =
-            safeArguments.getParcelable<T>(key)!!
-
-        operator fun setValue(frag: LoginDialogFragment, prop: KProperty<*>, value: T?) {
-            safeArguments.putParcelable(key, value)
+        operator fun setValue(frag: LoginDialogFragment, prop: KProperty<*>, value: String) {
+            safeArguments.putString(key, value)
         }
     }
 
-    internal var hint by SafeArgParcelable<Hint>(KEY_LOGIN_HINT)
-    internal var login by SafeArgParcelable<Login>(KEY_LOGIN)
+    private val guid by lazy { safeArguments.getString(KEY_LOGIN_GUID)!! }
+    private val origin by lazy { safeArguments.getString(KEY_LOGIN_ORIGIN)!! }
+    private val formActionOrigin by lazy { safeArguments.getString(KEY_LOGIN_FORM_ACTION_ORIGIN)!! }
+    private val httpRealm by lazy { safeArguments.getString(KEY_LOGIN_HTTP_REALM)!! }
+
+    private var username by SafeArgString(KEY_LOGIN_USERNAME)
+    private var password by SafeArgString(KEY_LOGIN_PASSWORD)
+
+    private var stateUpdate: Job? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return BottomSheetDialog(requireContext(), this.theme).apply {
@@ -78,25 +86,19 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val hostView = view.findViewById<TextView>(R.id.host_name)
-        hostView.text = login.origin
+        view.findViewById<TextView>(R.id.host_name).text = username
 
-        val saveMessage = view.findViewById<TextView>(R.id.save_message)
-
-        saveMessage.text =
+        view.findViewById<TextView>(R.id.save_message).text =
             getString(R.string.mozac_feature_prompt_logins_save_message, activity?.appName)
 
-        val saveConfirm = view.findViewById<Button>(R.id.save_confirm)
-        val cancelButton = view.findViewById<Button>(R.id.save_cancel)
-
-        saveConfirm.setOnClickListener {
+        view.findViewById<Button>(R.id.save_confirm).setOnClickListener {
             onPositiveClickAction()
         }
 
-        cancelButton.setOnClickListener {
+        view.findViewById<Button>(R.id.save_cancel).setOnClickListener {
             feature?.onCancel(sessionId)
         }
-        update(login)
+        update()
     }
 
     override fun onCancel(dialog: DialogInterface) {
@@ -105,7 +107,14 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     }
 
     private fun onPositiveClickAction() {
-        feature?.onConfirm(sessionId, login)
+        feature?.onConfirm(sessionId, Login(
+            guid = guid,
+            origin = origin,
+            formActionOrigin = formActionOrigin,
+            httpRealm = httpRealm,
+            username = username,
+            password = password
+        ))
     }
 
     private fun inflateRootView(container: ViewGroup? = null): View {
@@ -122,11 +131,11 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     private fun bindUsername(view: View) {
         val usernameEditText = view.findViewById<TextInputEditText>(R.id.username_field)
 
-        usernameEditText.setText(login.username)
+        usernameEditText.setText(username)
         usernameEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
-                login.username = editable.toString()
-                update(login)
+                username = editable.toString()
+                update()
             }
 
             override fun beforeTextChanged(
@@ -144,10 +153,22 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     private fun bindPassword(view: View) {
         val passwordEditText = view.findViewById<TextInputEditText>(R.id.password_field)
 
-        passwordEditText.setText(login.password)
+        passwordEditText.setText(password)
         passwordEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
-                login.password = editable.toString()
+                password = editable.toString()
+
+                if (password.isEmpty()) {
+                    setViewState(
+                        confirmButtonEnabled = false,
+                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
+                    )
+                } else {
+                    setViewState(
+                        confirmButtonEnabled = true,
+                        passwordErrorText = R.string.mozac_EMPTY_STRING
+                    )
+                }
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) =
@@ -158,8 +179,16 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun update(login: Login) {
+    fun update() {
         val scope = view?.toScope() ?: return
+        val login = Login(
+            guid = guid,
+            origin = origin,
+            formActionOrigin = formActionOrigin,
+            httpRealm = httpRealm,
+            username = username,
+            password = password
+        )
         stateUpdate?.cancel()
         stateUpdate = scope.launch {
             val result =
@@ -171,8 +200,10 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                 is LoginValidationDelegate.Result.CanBeUpdated ->
                     setViewState(confirmText = R.string.mozac_feature_prompt_update_confirmation)
                 is LoginValidationDelegate.Result.Error.EmptyPassword ->
-                    setViewState(confirmText = R.string.mozac_feature_prompt_save_confirmation,
-                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password)
+                    setViewState(
+                        confirmButtonEnabled = false,
+                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
+                    )
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
                     throw NotImplementedError()
                 is LoginValidationDelegate.Result.Error.GeckoError ->
@@ -182,14 +213,22 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     }
 
     private fun setViewState(
-        @StringRes confirmText: Int,
-        confirmButtonEnabled: Boolean = true,
+        @StringRes confirmText: Int? = null,
+        confirmButtonEnabled: Boolean? = null,
         @StringRes passwordErrorText: Int? = null
     ) {
-        view?.findViewById<Button>(R.id.save_confirm)?.text = context?.getString(confirmText)
-        view?.findViewById<Button>(R.id.save_confirm)?.isEnabled = confirmButtonEnabled
-        view?.findViewById<TextInputLayout>(R.id.password_text_input_layout)?.error =
-            passwordErrorText?.let { context?.getString(it) }
+        if (confirmText != null) {
+            view?.findViewById<Button>(R.id.save_confirm)?.text = context?.getString(confirmText)
+        }
+
+        if (confirmButtonEnabled != null) {
+            view?.findViewById<Button>(R.id.save_confirm)?.isEnabled = confirmButtonEnabled
+        }
+
+        if (passwordErrorText != null) {
+            view?.findViewById<TextInputLayout>(R.id.password_text_input_layout)?.error =
+                context?.getString(passwordErrorText)
+        }
     }
 
     companion object {
@@ -201,7 +240,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
          * */
         fun newInstance(
             sessionId: String,
-            hint: Hint,
+            hint: Int,
             login: Login
         ): LoginDialogFragment {
 
@@ -210,8 +249,13 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
             with(arguments) {
                 putString(KEY_SESSION_ID, sessionId)
-                putParcelable(KEY_LOGIN_HINT, hint)
-                putParcelable(KEY_LOGIN, login)
+                putInt(KEY_LOGIN_HINT, hint)
+                putString(KEY_LOGIN_USERNAME, login.username)
+                putString(KEY_LOGIN_PASSWORD, login.password)
+                putString(KEY_LOGIN_GUID, login.guid)
+                putString(KEY_LOGIN_ORIGIN, login.origin)
+                putString(KEY_LOGIN_FORM_ACTION_ORIGIN, login.formActionOrigin)
+                putString(KEY_LOGIN_HTTP_REALM, login.httpRealm)
             }
 
             fragment.arguments = arguments
