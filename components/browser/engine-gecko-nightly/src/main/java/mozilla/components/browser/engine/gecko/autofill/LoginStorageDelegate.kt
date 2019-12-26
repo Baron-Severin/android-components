@@ -60,14 +60,7 @@ class LoginStorageDelegate(
         return runBlocking { // TODO seems like this needs to block.  verify it works
             loginStorage.withUnlocked(passwordsKey) {
                 GeckoResult.fromValue(loginStorage.getByHostname(domain).await().map { // TODO getByHostname -> getByBaseDomain (after AS update)
-                    LoginStorage.LoginEntry.Builder()
-                        .guid(it.id)
-                        .origin(it.hostname)
-                        .formActionOrigin(it.formSubmitURL)
-                        .httpRealm(it.httpRealm)
-                        .username(it.username ?: "") // TODO this will be nonnull after an incoming AS update
-                        .password(it.password)
-                        .build()
+                    it.toLoginEntry()
                 }.toTypedArray())
             }
         }
@@ -84,21 +77,7 @@ class LoginStorageDelegate(
                         serverPassword?.let { loginStorage.update(it.mergeWithLogin(login)).await() }
                     }
                     Operation.CREATE -> {
-                        loginStorage.add(
-                            ServerPassword(
-                                // Underlying Rust code will generate a new GUID
-                                id = "",
-                                username = login.username,
-                                password = login.password,
-                                hostname = login.origin,
-                                formSubmitURL = login.formActionOrigin,
-                                httpRealm = login.httpRealm,
-                                // usernameField & passwordField are allowed to be empty when
-                                // information is not available
-                                usernameField = "",
-                                passwordField = ""
-                            )
-                        ).await()
+                        loginStorage.add(login.toServerPassword()).await()
                     }
                 }
             }
