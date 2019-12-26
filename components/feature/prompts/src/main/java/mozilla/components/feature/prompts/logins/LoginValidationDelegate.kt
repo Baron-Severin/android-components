@@ -12,7 +12,7 @@ import kotlinx.coroutines.async
 import mozilla.appservices.logins.InvalidLoginReason
 import mozilla.appservices.logins.InvalidRecordException
 import mozilla.appservices.logins.ServerPassword
-import mozilla.components.concept.engine.Login
+import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.feature.prompts.logins.LoginValidationDelegate.Result
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
 
@@ -46,7 +46,7 @@ interface LoginValidationDelegate {
 }
 
 /**
- * Default [LoginValidationDelegate] implementation that returns false.
+ * Default [LoginValidationDelegate] implementation that always returns false.
  *
  * This can be used by any consumer that does not want to make use of autofill APIs.
  */
@@ -57,7 +57,8 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
 }
 
 /**
- * TODO
+ * A delegate that will check against [storage] to see if a given Login can be persisted, and return
+ * information about why it can or cannot.
  */
 class DefaultLoginValidationDelegate(
     private val storage: AsyncLoginsStorage,
@@ -67,7 +68,9 @@ class DefaultLoginValidationDelegate(
         try {
             return CoroutineScope(IO).async {
                 storage.ensureUnlocked(passwordsKey).await()
-                // TODO share logic for login -> server password
+                // TODO this should share logic from mozilla.components.browser.engine.gecko.autofill.Login.toServerPassword,
+                //  but it can't depend on GV. 'service-sync-logins' and 'concept-engine' have no good shared descendant
+                //  where this can live, where can it be moved?
                 storage.ensureValid(ServerPassword(
                     id = login.guid ?: "",
                     username = login.username,

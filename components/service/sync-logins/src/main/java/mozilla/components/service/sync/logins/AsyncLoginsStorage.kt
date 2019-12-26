@@ -289,16 +289,16 @@ interface AsyncLoginsStorage : AutoCloseable {
     fun importLoginsAsync(logins: List<ServerPassword>): Deferred<Long>
 
     /**
-     * TODO
+     * Checks if login already exists and is valid.
      *
-     * @rejectsWith [InvalidRecordException] TODO
+     * @rejectsWith [InvalidRecordException] On unexpected errors (IO failure, rust panics, etc)
      */
     fun ensureValid(login: ServerPassword): Deferred<Unit>
 
     /**
-     * TODO
+     * Fetch the list of passwords for some hostname from the underlying storage layer.
      *
-     * @rejectsWith [LoginsStorageException] TODO
+     * @rejectsWith [LoginsStorageException] On unexpected errors (IO failure, rust panics, etc)
      */
     fun getByHostname(hostname: String): Deferred<List<ServerPassword>>
 
