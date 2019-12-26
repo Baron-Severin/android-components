@@ -60,3 +60,13 @@ fun ServerPassword.toLogin() = Login(
     username = username ?: "",
     password = password
 )
+
+/**
+ * Converts a GeckoView [LoginStorage.LoginEntry] to an Application Services [ServerPassword]
+ */
+fun LoginStorage.LoginEntry.toServerPassword() = toLogin().toServerPassword()
+
+/**
+ * Converts an Application Services [ServerPassword] to a GeckoView [LoginStorage.LoginEntry]
+ */
+fun ServerPassword.toLoginEntry() = toLogin().toLoginEntry()
