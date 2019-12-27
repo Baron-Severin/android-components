@@ -31,7 +31,6 @@ import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.MON
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.TIME
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.WEEK
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.PromptResponse
-import org.mozilla.geckoview.LoginStorage
 import java.io.FileOutputStream
 import java.io.IOException
 import java.security.InvalidParameterException

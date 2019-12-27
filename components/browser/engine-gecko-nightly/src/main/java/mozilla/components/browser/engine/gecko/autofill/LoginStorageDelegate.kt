@@ -27,6 +27,9 @@ internal interface LoginDelegate {
     fun onLoginSave(login: LoginStorage.LoginEntry)
 }
 
+/**
+ * A type of persistence operation, either 'create' or 'update'.
+ */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 enum class Operation { CREATE, UPDATE }
 

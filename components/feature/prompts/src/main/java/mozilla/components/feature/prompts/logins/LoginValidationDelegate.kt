@@ -21,6 +21,10 @@ import mozilla.components.service.sync.logins.AsyncLoginsStorage
  */
 interface LoginValidationDelegate {
 
+    /**
+     * The result of validating a given [Login] against currently stored [Login]s.  This will
+     * include whether it can be created, updated, or neither, along with an explanation of any errors.
+     */
     sealed class Result {
         /**
          * Indicates that the [Login] does not currently exist in the storage, and a new entry
@@ -32,16 +36,33 @@ interface LoginValidationDelegate {
          * to update its information.
          */
         object CanBeUpdated : Result()
+        /**
+         * The [Login] cannot be saved.
+         */
         sealed class Error : Result() {
             /**
              * The passed [Login] had an empty password field, and so cannot be saved.
              */
             object EmptyPassword : Error()
+            /**
+             * The [LoginValidationDelegate] has not implemented login functionality, and will
+             * always return this error.
+             */
             object NotImplemented : Error()
+            /**
+             * Something went wrong in GeckoView. We have no way to handle this type of error. See
+             * [exception] for details.
+             */
             data class GeckoError(val exception: InvalidLoginReason) : Error()
         }
     }
 
+    /**
+     * Checks whether or not [login] can be persisted.
+     *
+     * @returns a [LoginValidationDelegate.Result], detailing whether [login] can be saved as a new
+     * value, used to update an existing one, or an error occured.
+     */
     fun validateCanPersist(login: Login): Deferred<Result>
 }
 
