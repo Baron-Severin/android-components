@@ -23,12 +23,12 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import mozilla.appservices.logins.LoginsStorageException
 import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.feature.prompts.R
 import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.view.toScope
-import java.lang.RuntimeException
 import kotlin.reflect.KProperty
 import com.google.android.material.R as MaterialR
 
@@ -194,7 +194,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
             val result =
                 feature?.loginValidationDelegate?.validateCanPersist(login)?.await()
 
-            when(result) {
+            when (result) {
                 is LoginValidationDelegate.Result.CanBeCreated ->
                     setViewState(confirmText = R.string.mozac_feature_prompt_save_confirmation)
                 is LoginValidationDelegate.Result.CanBeUpdated ->
@@ -207,7 +207,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
                     throw NotImplementedError()
                 is LoginValidationDelegate.Result.Error.GeckoError ->
-                    throw RuntimeException("Unexpected problem while accessing storage. Cause: ${result.exception}")
+                    throw LoginsStorageException("Unexpected problem while accessing storage. Cause: ${result.exception}")
             }
         }
     }
