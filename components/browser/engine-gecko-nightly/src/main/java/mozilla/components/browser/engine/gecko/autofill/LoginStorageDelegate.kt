@@ -8,6 +8,7 @@ import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mozilla.appservices.logins.LoginsStorage
@@ -33,6 +34,8 @@ internal interface LoginDelegate {
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 enum class Operation { CREATE, UPDATE }
 
+private const val PASSWORDS_KEY = "passwords"
+
 /**
  * [LoginStorage.Delegate] implementation.
  *
@@ -45,15 +48,17 @@ enum class Operation { CREATE, UPDATE }
  */
 class LoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
-    private val passwordsKey: () -> Deferred<String>,
+    keyStore: SecureAbove22Preferences,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : LoginDelegate, LoginStorage.Delegate {
+
+    private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
     override fun onLoginUsed(login: LoginStorage.LoginEntry) {
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
         scope.launch {
-            loginStorage.withUnlocked(passwordsKey) {
+            loginStorage.withUnlocked(password) {
                 loginStorage.touch(guid).await()
             }
         }
@@ -64,7 +69,7 @@ class LoginStorageDelegate(
             GeckoResult.fromValue(this)
 
         return runBlocking { // TODO seems like this needs to block.  verify it works
-            loginStorage.withUnlocked(passwordsKey) {
+            loginStorage.withUnlocked(password) {
                 loginStorage.getByHostname(domain).await() // TODO getByHostname -> getByBaseDomain (after AS update)
                     .map { it.toLoginEntry() }
                     .toTypedArray()
@@ -76,7 +81,7 @@ class LoginStorageDelegate(
     @Synchronized
     override fun onLoginSave(login: LoginStorage.LoginEntry) {
         scope.launch {
-            loginStorage.withUnlocked(passwordsKey) {
+            loginStorage.withUnlocked(password) {
                 val serverPassword = login.guid?.let { loginStorage.get(it) }?.await()
 
                 when (getPersistenceOperation(login, serverPassword)) {
