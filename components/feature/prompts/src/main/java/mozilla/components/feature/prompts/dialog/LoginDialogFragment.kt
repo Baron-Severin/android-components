@@ -86,7 +86,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<TextView>(R.id.host_name).text = username
+        view.findViewById<TextView>(R.id.host_name).text = origin
 
         view.findViewById<TextView>(R.id.save_message).text =
             getString(R.string.mozac_feature_prompt_logins_save_message, activity?.appName)
