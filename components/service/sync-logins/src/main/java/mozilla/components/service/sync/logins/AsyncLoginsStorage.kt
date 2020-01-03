@@ -300,7 +300,7 @@ interface AsyncLoginsStorage : AutoCloseable {
      *
      * @rejectsWith [LoginsStorageException] On unexpected errors (IO failure, rust panics, etc)
      */
-    fun getByHostname(hostname: String): Deferred<List<ServerPassword>>
+    fun getByBaseDomain(hostname: String): Deferred<List<ServerPassword>>
 
     /**
      * Run some [block] which operates over an unlocked instance of [AsyncLoginsStorage].
@@ -415,8 +415,8 @@ open class AsyncLoginsStorageAdapter<T : LoginsStorage>(private val wrapped: T) 
         return scope.async { wrapped.ensureValid(login) }
     }
 
-    override fun getByHostname(hostname: String): Deferred<List<ServerPassword>> {
-        return scope.async { wrapped.getByHostname(hostname) }
+    override fun getByBaseDomain(hostname: String): Deferred<List<ServerPassword>> {
+        return scope.async { wrapped.getByBaseDomain(hostname) }
     }
 
     companion object {

@@ -42,7 +42,7 @@ private const val PASSWORDS_KEY = "passwords"
  *
  * App will have to instantiate this and set it on the runtime and pass in the [LoginsStorage] and
  * [SecureAbove22Preferences] with a key that conforms to "passwords".  This lets GV delegate to
- * the client for storage.
+ * the client for storage. // TODO clarify this kdoc
  */
 class LoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
@@ -68,7 +68,7 @@ class LoginStorageDelegate(
 
         return runBlocking { // TODO seems like this needs to block.  verify it works
             loginStorage.withUnlocked(password) {
-                loginStorage.getByHostname(domain).await() // TODO getByHostname -> getByBaseDomain (after AS update)
+                loginStorage.getByBaseDomain(domain).await()
                     .map { it.toLoginEntry() }
                     .toTypedArray()
                     .toGeckoResult()

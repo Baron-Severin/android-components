@@ -88,13 +88,13 @@ class DefaultLoginValidationDelegate(
     private val scope: CoroutineScope = CoroutineScope(IO)
 ) : LoginValidationDelegate {
 
-    val PASSWORDS_KEY = "passwords" // TODO move (keep in sync w loginstoragedelegate
+    val PASSWORDS_KEY = "passwords" // TODO move (keep in sync w loginstoragedelegate)
 
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
     override fun validateCanPersist(login: Login): Deferred<Result> {
-        try {
-            return CoroutineScope(IO).async {
+        return CoroutineScope(IO).async {
+            try {
                 storage.ensureUnlocked(password().await()).await()
                 // TODO this should share logic from mozilla.components.browser.engine.gecko.autofill.Login.toServerPassword,
                 //  but it can't depend on GV. 'service-sync-logins' and 'concept-engine' have no good shared descendant
@@ -110,20 +110,19 @@ class DefaultLoginValidationDelegate(
                     passwordField = ""
                 )).await()
                 Result.CanBeCreated
-            }
-        } catch (e: InvalidRecordException) {
-            return CoroutineScope(IO).async {
+            } catch (e: InvalidRecordException) {
                 when (e.reason) {
                     InvalidLoginReason.DUPLICATE_LOGIN -> Result.CanBeUpdated
                     InvalidLoginReason.EMPTY_PASSWORD -> Result.Error.EmptyPassword
                     InvalidLoginReason.EMPTY_ORIGIN -> Result.Error.GeckoError(e.reason)
                     InvalidLoginReason.BOTH_TARGETS -> Result.Error.GeckoError(e.reason)
                     InvalidLoginReason.NO_TARGET -> Result.Error.GeckoError(e.reason)
+                    InvalidLoginReason.ILLEGAL_FIELD_VALUE -> Result.Error.GeckoError(e.reason) // TODO this isnt a gecko error. represent it properly
                 }
+            } finally {
+                @Suppress("DeferredResultUnused") // No action needed
+                storage.lock()
             }
-        } finally {
-            @Suppress("DeferredResultUnused") // No action needed
-            storage.lock()
         }
     }
 }
