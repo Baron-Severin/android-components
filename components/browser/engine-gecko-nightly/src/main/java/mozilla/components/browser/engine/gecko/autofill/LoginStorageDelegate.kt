@@ -6,7 +6,6 @@ package mozilla.components.browser.engine.gecko.autofill
 
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -25,7 +24,6 @@ import org.mozilla.geckoview.LoginStorage
  */
 internal interface LoginDelegate {
     fun onLoginUsed(login: LoginStorage.LoginEntry)
-    fun onLoginSave(login: LoginStorage.LoginEntry)
 }
 
 /**

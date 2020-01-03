@@ -14,6 +14,7 @@ import mozilla.appservices.logins.InvalidRecordException
 import mozilla.appservices.logins.ServerPassword
 import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.feature.prompts.logins.LoginValidationDelegate.Result
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
 
 /**
@@ -83,12 +84,18 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
  */
 class DefaultLoginValidationDelegate(
     private val storage: AsyncLoginsStorage,
-    private val passwordsKey: String
+    keyStore: SecureAbove22Preferences,
+    private val scope: CoroutineScope = CoroutineScope(IO)
 ) : LoginValidationDelegate {
+
+    val PASSWORDS_KEY = "passwords" // TODO move (keep in sync w loginstoragedelegate
+
+    private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
+
     override fun validateCanPersist(login: Login): Deferred<Result> {
         try {
             return CoroutineScope(IO).async {
-                storage.ensureUnlocked(passwordsKey).await()
+                storage.ensureUnlocked(password().await()).await()
                 // TODO this should share logic from mozilla.components.browser.engine.gecko.autofill.Login.toServerPassword,
                 //  but it can't depend on GV. 'service-sync-logins' and 'concept-engine' have no good shared descendant
                 //  where this can live, where can it be moved?
