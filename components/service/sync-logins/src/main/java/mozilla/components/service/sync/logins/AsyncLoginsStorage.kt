@@ -13,7 +13,6 @@ import kotlinx.coroutines.plus
 import mozilla.appservices.logins.DatabaseLoginsStorage
 import mozilla.appservices.logins.InvalidRecordException
 import mozilla.appservices.logins.LoginsStorage
-import mozilla.appservices.logins.MemoryLoginsStorage
 import mozilla.components.concept.sync.SyncAuthInfo
 import mozilla.components.concept.sync.SyncStatus
 import mozilla.appservices.sync15.SyncTelemetryPing
@@ -302,7 +301,7 @@ interface AsyncLoginsStorage : AutoCloseable {
      *
      * @rejectsWith [LoginsStorageException] On unexpected errors (IO failure, rust panics, etc)
      */
-    fun getByHostname(hostname: String): Deferred<List<ServerPassword>>
+    fun getByBaseDomain(hostname: String): Deferred<List<ServerPassword>>
 
     /**
      * Run some [block] which operates over an unlocked instance of [AsyncLoginsStorage].
@@ -417,8 +416,8 @@ open class AsyncLoginsStorageAdapter<T : LoginsStorage>(private val wrapped: T) 
         return scope.async { wrapped.ensureValid(login) }
     }
 
-    override fun getByHostname(hostname: String): Deferred<List<ServerPassword>> {
-        return scope.async { wrapped.getByHostname(hostname) }
+    override fun getByBaseDomain(hostname: String): Deferred<List<ServerPassword>> {
+        return scope.async { wrapped.getByBaseDomain(hostname) }
     }
 
     companion object {
@@ -430,10 +429,18 @@ open class AsyncLoginsStorageAdapter<T : LoginsStorage>(private val wrapped: T) 
         }
 
         /**
-         * Creates an [AsyncLoginsStorage] that is backed by a [MemoryLoginsStorage].
+         * Creates an [AsyncLoginsStorage] that is backed by an in memory [DatabaseLoginsStorage].
          */
-        fun inMemory(items: List<ServerPassword>): AsyncLoginsStorageAdapter<MemoryLoginsStorage> {
-            return AsyncLoginsStorageAdapter(MemoryLoginsStorage(items))
+        @Suppress("UNUSED_PARAMETER") // TODO remove
+        fun inMemory(items: List<ServerPassword>): AsyncLoginsStorageAdapter<DatabaseLoginsStorage> {
+            return AsyncLoginsStorageAdapter(DatabaseLoginsStorage(":memory:")).apply {
+                // TODO can't unlock w/o an encryption key, not sure we can maintain this method behavior
+                /*
+                ensureUnlocked(/* password */) {
+                    items.forEach { add(it) }
+                }
+                 */
+            }
         }
     }
 }

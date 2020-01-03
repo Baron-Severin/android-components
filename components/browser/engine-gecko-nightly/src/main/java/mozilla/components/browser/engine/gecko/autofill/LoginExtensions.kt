@@ -57,7 +57,7 @@ fun ServerPassword.toLogin() = Login(
     origin = hostname,
     formActionOrigin = formSubmitURL,
     httpRealm = httpRealm,
-    username = username ?: "",
+    username = username,
     password = password
 )
 
