@@ -55,10 +55,10 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         }
     }
 
-    private val guid by lazy { safeArguments.getString(KEY_LOGIN_GUID)!! }
+    private val guid by lazy { safeArguments.getString(KEY_LOGIN_GUID) }
     private val origin by lazy { safeArguments.getString(KEY_LOGIN_ORIGIN)!! }
-    private val formActionOrigin by lazy { safeArguments.getString(KEY_LOGIN_FORM_ACTION_ORIGIN)!! }
-    private val httpRealm by lazy { safeArguments.getString(KEY_LOGIN_HTTP_REALM)!! }
+    private val formActionOrigin by lazy { safeArguments.getString(KEY_LOGIN_FORM_ACTION_ORIGIN) }
+    private val httpRealm by lazy { safeArguments.getString(KEY_LOGIN_HTTP_REALM) }
 
     private var username by SafeArgString(KEY_LOGIN_USERNAME)
     private var password by SafeArgString(KEY_LOGIN_PASSWORD)
@@ -104,6 +104,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)
         feature?.onCancel(sessionId)
+        dismiss()
     }
 
     private fun onPositiveClickAction() {
@@ -115,6 +116,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
             username = username,
             password = password
         ))
+        dismiss()
     }
 
     private fun inflateRootView(container: ViewGroup? = null): View {
@@ -205,7 +207,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                         passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
                     )
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
-                    throw NotImplementedError()
+                    throw NotImplementedError() // TODO this should noop, not throw
                 is LoginValidationDelegate.Result.Error.GeckoError ->
                     throw LoginsStorageException("Unexpected problem while accessing storage. Cause: ${result.exception}")
             }

@@ -20,6 +20,7 @@ import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.autofill.Login
 import mozilla.components.concept.engine.prompt.Choice
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.engine.prompt.PromptRequest.Alert
@@ -32,6 +33,7 @@ import mozilla.components.concept.engine.prompt.PromptRequest.Share
 import mozilla.components.concept.engine.prompt.PromptRequest.SingleChoice
 import mozilla.components.concept.engine.prompt.PromptRequest.TextPrompt
 import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection
+import mozilla.components.concept.engine.prompt.PromptRequest.LoginPrompt
 import mozilla.components.feature.prompts.dialog.AlertDialogFragment
 import mozilla.components.feature.prompts.dialog.AuthenticationDialogFragment
 import mozilla.components.feature.prompts.dialog.ChoiceDialogFragment
@@ -300,6 +302,8 @@ class PromptFeature private constructor(
                 }
 
                 is Share -> it.onSuccess()
+
+                is LoginPrompt -> it.onConfirm(value as Login)
 
                 is PromptRequest.Confirm -> {
                     val (isCheckBoxChecked, buttonType) = value as Pair<Boolean, MultiButtonDialogFragment.ButtonType>
