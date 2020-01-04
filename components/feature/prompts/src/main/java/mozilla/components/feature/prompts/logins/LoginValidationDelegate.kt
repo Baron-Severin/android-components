@@ -117,7 +117,7 @@ class DefaultLoginValidationDelegate(
                     InvalidLoginReason.EMPTY_ORIGIN -> Result.Error.GeckoError(e.reason)
                     InvalidLoginReason.BOTH_TARGETS -> Result.Error.GeckoError(e.reason)
                     InvalidLoginReason.NO_TARGET -> Result.Error.GeckoError(e.reason)
-                    InvalidLoginReason.ILLEGAL_FIELD_VALUE -> Result.Error.GeckoError(e.reason) // TODO this isnt a gecko error. represent it properly
+                    InvalidLoginReason.ILLEGAL_FIELD_VALUE -> Result.Error.GeckoError(e.reason) // TODO in what ways can the login fields be illegal? represent these in the UI
                 }
             } finally {
                 @Suppress("DeferredResultUnused") // No action needed

@@ -369,7 +369,7 @@ class PromptFeature private constructor(
         // Requests that are handled with dialogs
         val dialog = when (promptRequest) {
 
-            is PromptRequest.LoginPrompt -> {
+            is LoginPrompt -> {
                 LoginDialogFragment.newInstance(
                     sessionId = session.id,
                     hint = promptRequest.hint,
@@ -516,7 +516,7 @@ class PromptFeature private constructor(
             is Color,
             is Authentication,
             is PromptRequest.Popup,
-            is PromptRequest.LoginPrompt,
+            is LoginPrompt,
             is Share -> true
             is Alert, is TextPrompt, is PromptRequest.Confirm -> promptAbuserDetector.shouldShowMoreDialogs
         }

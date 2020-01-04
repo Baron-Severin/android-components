@@ -180,6 +180,9 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         })
     }
 
+    /**
+     * Check current state then update view state to match.
+     */
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun update() {
         val scope = view?.toScope() ?: return
@@ -207,9 +210,11 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                         passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
                     )
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
-                    throw NotImplementedError() // TODO this should noop, not throw
+                    throw NotImplementedError("Unable to validate saved logins. Are you using " +
+                        "the correct ${LoginValidationDelegate::class}?")
                 is LoginValidationDelegate.Result.Error.GeckoError ->
-                    throw LoginsStorageException("Unexpected problem while accessing storage. Cause: ${result.exception}")
+                    throw LoginsStorageException("Unexpected problem while accessing storage. " +
+                        "Cause: ${result.exception}")
             }
         }
     }
