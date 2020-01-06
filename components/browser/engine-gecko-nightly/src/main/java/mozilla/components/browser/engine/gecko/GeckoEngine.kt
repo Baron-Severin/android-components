@@ -6,6 +6,7 @@ package mozilla.components.browser.engine.gecko
 
 import android.content.Context
 import android.util.AttributeSet
+import mozilla.components.browser.engine.gecko.autofill.LoginStorageDelegate
 import mozilla.components.browser.engine.gecko.integration.LocaleSettingUpdater
 import mozilla.components.browser.engine.gecko.mediaquery.from
 import mozilla.components.browser.engine.gecko.mediaquery.toGeckoValue
@@ -33,6 +34,8 @@ import mozilla.components.concept.engine.webextension.WebExtensionDelegate
 import mozilla.components.concept.engine.webnotifications.WebNotificationDelegate
 import mozilla.components.concept.engine.webpush.WebPushDelegate
 import mozilla.components.concept.engine.webpush.WebPushHandler
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.service.sync.logins.AsyncLoginsStorageAdapter
 import org.json.JSONObject
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlocking
@@ -75,6 +78,12 @@ class GeckoEngine(
             throw RuntimeException("GeckoRuntime is shutting down")
         }
         trackingProtectionExceptionStore.restore()
+
+        val tempStorage = AsyncLoginsStorageAdapter.forDatabase(context.getDatabasePath("logins.sqlite").absolutePath)
+        val tempPrefs = SecureAbove22Preferences(context, "login-storage")
+
+        val delegate = LoginStorageDelegate(tempStorage, tempPrefs)
+        runtime.loginStorageDelegate = delegate
     }
 
     /**

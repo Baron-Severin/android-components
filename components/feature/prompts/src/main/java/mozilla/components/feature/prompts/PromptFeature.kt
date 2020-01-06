@@ -5,6 +5,7 @@
 package mozilla.components.feature.prompts
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
@@ -50,17 +51,29 @@ import mozilla.components.feature.prompts.dialog.Prompter
 import mozilla.components.feature.prompts.dialog.TextPromptDialogFragment
 import mozilla.components.feature.prompts.dialog.TimePickerDialogFragment
 import mozilla.components.feature.prompts.file.FilePicker
+import mozilla.components.feature.prompts.logins.DefaultLoginValidationDelegate
 import mozilla.components.feature.prompts.logins.NoopLoginValidationDelegate
 import mozilla.components.feature.prompts.logins.LoginValidationDelegate
 import mozilla.components.feature.prompts.share.DefaultShareDelegate
 import mozilla.components.feature.prompts.share.ShareDelegate
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.lib.state.ext.flowScoped
+import mozilla.components.service.sync.logins.AsyncLoginsStorageAdapter
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 import mozilla.components.support.base.feature.PermissionsFeature
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 import java.security.InvalidParameterException
 import java.util.Date
+
+
+
+fun getDelegate(context: Context): LoginValidationDelegate {
+    val tempStorage = AsyncLoginsStorageAdapter.forDatabase(context.getDatabasePath("logins.sqlite").absolutePath)
+    val tempPrefs = SecureAbove22Preferences(context, "login-storage")
+    tempPrefs.putString("passwords", "myPassword")
+    return DefaultLoginValidationDelegate(tempStorage, tempPrefs)
+}
 
 @VisibleForTesting(otherwise = PRIVATE)
 internal const val FRAGMENT_TAG = "mozac_feature_prompt_dialog"
@@ -114,7 +127,8 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(), //TODO
+        loginValidationDelegate: LoginValidationDelegate = getDelegate(activity), //TODO temp
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Activity(activity),
@@ -132,7 +146,8 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+        loginValidationDelegate: LoginValidationDelegate = getDelegate(fragment.requireContext()),
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Fragment(fragment),
@@ -163,7 +178,8 @@ class PromptFeature private constructor(
         customTabId = customTabId,
         fragmentManager = fragmentManager,
         shareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate = NoopLoginValidationDelegate(),
+        loginValidationDelegate = getDelegate(activity!!),
         onNeedToRequestPermissions = onNeedToRequestPermissions
     )
 
