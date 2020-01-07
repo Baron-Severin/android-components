@@ -10,8 +10,6 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.annotation.VisibleForTesting
 import mozilla.components.browser.engine.gecko.GeckoEngineSession
-import mozilla.components.browser.engine.gecko.autofill.toLogin
-import mozilla.components.browser.engine.gecko.autofill.toLoginEntry
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.engine.prompt.Choice
 import mozilla.components.concept.engine.prompt.PromptRequest
@@ -31,6 +29,7 @@ import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.MON
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.TIME
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.DateTimePrompt.Type.WEEK
 import org.mozilla.geckoview.GeckoSession.PromptDelegate.PromptResponse
+import org.mozilla.geckoview.LoginStorage
 import java.io.FileOutputStream
 import java.io.IOException
 import java.security.InvalidParameterException
@@ -61,6 +60,25 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
         session: GeckoSession,
         prompt: PromptDelegate.LoginStoragePrompt
     ): GeckoResult<PromptResponse>? {
+        fun LoginStorage.LoginEntry.toLogin() = Login(
+            guid = guid,
+            origin = origin,
+            formActionOrigin = formActionOrigin,
+            httpRealm = httpRealm,
+            username = username,
+            password = password
+        )
+
+        fun Login.toLoginEntry() = LoginStorage.LoginEntry.Builder()
+            .guid(guid)
+            .origin(origin)
+            .formActionOrigin(formActionOrigin)
+            .httpRealm(httpRealm)
+            .username(username)
+            .password(password)
+            .build()
+
+
         val geckoResult = GeckoResult<PromptResponse>()
         val onConfirmSave: (Login) -> Unit = { login ->
             geckoResult.complete(prompt.confirm(login.toLoginEntry()))

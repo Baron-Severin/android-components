@@ -23,12 +23,12 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import mozilla.appservices.logins.LoginsStorageException
 import mozilla.components.concept.storage.Login
 import mozilla.components.feature.prompts.R
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.view.toScope
+import java.io.IOException
 import kotlin.reflect.KProperty
 import com.google.android.material.R as MaterialR
 
@@ -213,7 +213,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                     throw NotImplementedError("Unable to validate saved logins. Are you using " +
                         "the correct ${LoginValidationDelegate::class}?")
                 is LoginValidationDelegate.Result.Error.GeckoError ->
-                    throw LoginsStorageException("Unexpected problem while accessing storage. " +
+                    throw IOException("Unexpected problem while accessing storage. " +
                         "Cause: ${result.exception}")
             }
         }
