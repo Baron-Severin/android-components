@@ -16,17 +16,17 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 
 @ExperimentalCoroutinesApi
-class LoginStorageDelegateTest {
+class DefaultLoginStorageDelegateTest {
 
     private lateinit var loginsStorage: AsyncLoginsStorage
-    private lateinit var delegate: LoginStorageDelegate
+    private lateinit var delegateDefault: DefaultLoginStorageDelegate
     private lateinit var scope: TestCoroutineScope
 
     @Before
     fun before() {
         loginsStorage = mockLoginsStorage()
         scope = TestCoroutineScope()
-        delegate = LoginStorageDelegate(loginsStorage, "password", scope)
+        delegateDefault = DefaultLoginStorageDelegate(loginsStorage, "password", scope)
     }
 
     @Test
@@ -34,7 +34,7 @@ class LoginStorageDelegateTest {
         scope.launch {
             val login = createLogin("guid")
 
-            delegate.onLoginUsed(login)
+            delegateDefault.onLoginUsed(login)
             verify(loginsStorage, times(1)).touch(anyNonNull()).await()
         }
     }

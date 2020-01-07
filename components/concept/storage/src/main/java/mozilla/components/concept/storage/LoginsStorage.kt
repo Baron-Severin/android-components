@@ -109,3 +109,12 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
         return CompletableDeferred(Result.Error.NotImplemented)
     }
 }
+
+/**
+ * Defines methods that will be implemented by [LoginStorage.Delegate] in future versions.
+ *
+ * TODO remove these once the GV API is complete.
+ */
+interface LoginStorageDelegate {
+    fun onLoginUsed(login: LoginEntry)
+}

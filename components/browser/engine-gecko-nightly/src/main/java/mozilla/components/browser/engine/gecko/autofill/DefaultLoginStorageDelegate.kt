@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import mozilla.components.concept.storage.LoginStorageDelegate
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
 import mozilla.components.service.sync.logins.ServerPassword
@@ -17,15 +18,6 @@ import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.LoginStorage
 import org.mozilla.geckoview.LoginStorage.LoginEntry
-
-/**
- * Defines methods that will be implemented by [LoginStorage.Delegate] in future versions.
- *
- * TODO remove these once the GV API is complete.
- */
-internal interface LoginDelegate {
-    fun onLoginUsed(login: LoginEntry)
-}
 
 /**
  * A type of persistence operation, either 'create' or 'update'.
@@ -44,11 +36,11 @@ private const val PASSWORDS_KEY = "passwords"
  * In order to use this class, attach it to the active [GeckoRuntime] as its `loginStorageDelegate`.
  * It is not designed to work with other engines.
  */
-class LoginStorageDelegate(
+class DefaultLoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
     keyStore: SecureAbove22Preferences,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
-) : LoginDelegate, LoginStorage.Delegate {
+) : LoginStorageDelegate, LoginStorage.Delegate {
 
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
