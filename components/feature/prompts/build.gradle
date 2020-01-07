@@ -28,12 +28,6 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 dependencies {
-    // TODO this is only required for [DefaultLoginValidationDelegate]. Find a better home for that class and remove this dependency
-    implementation project(':service-sync-logins')
-    implementation project(':lib-dataprotect')
-
-
-
     implementation project(':browser-state')
     implementation project(':concept-engine')
     implementation project(':lib-state')
