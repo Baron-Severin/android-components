@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.browser.engine.gecko.autofill
+package mozilla.components.service.sync.logins
 
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
@@ -13,11 +13,6 @@ import kotlinx.coroutines.runBlocking
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginStorageDelegate
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
-import mozilla.components.service.sync.logins.AsyncLoginsStorage
-import mozilla.components.service.sync.logins.ServerPassword
-import org.mozilla.geckoview.GeckoResult
-import org.mozilla.geckoview.GeckoRuntime
-import org.mozilla.geckoview.LoginStorage
 
 /**
  * A type of persistence operation, either 'create' or 'update'.
@@ -26,10 +21,6 @@ import org.mozilla.geckoview.LoginStorage
 enum class Operation { CREATE, UPDATE }
 
 private const val PASSWORDS_KEY = "passwords"
-
-class TodoNameMeGvDelegate: LoginStorage.Delegate {
-    // TODO forward things to DefaultLoginStorageDelegate
-}
 
 /**
  * [LoginStorage.Delegate] implementation.
@@ -138,3 +129,32 @@ fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
         formSubmitURL = formSubmitUrl
     )
 }
+
+/**
+ * Converts an Android Components [Login] to an Application Services [ServerPassword]
+ */
+fun Login.toServerPassword() = ServerPassword(
+    // Underlying Rust code will generate a new GUID
+    id = "",
+    username = username,
+    password = password,
+    hostname = origin,
+    formSubmitURL = formActionOrigin,
+    httpRealm = httpRealm,
+    // usernameField & passwordField are allowed to be empty when
+    // information is not available
+    usernameField = "",
+    passwordField = ""
+)
+
+/**
+ * Converts an Application Services [ServerPassword] to an Android Components [Login]
+ */
+fun ServerPassword.toLogin() = Login(
+    guid = id,
+    origin = hostname,
+    formActionOrigin = formSubmitURL,
+    httpRealm = httpRealm,
+    username = username,
+    password = password
+)

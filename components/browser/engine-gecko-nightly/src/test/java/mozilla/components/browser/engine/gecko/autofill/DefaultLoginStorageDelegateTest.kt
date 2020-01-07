@@ -5,7 +5,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScope
 import mozilla.components.concept.engine.Login
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
+import mozilla.components.service.sync.logins.DefaultLoginStorageDelegate
+import mozilla.components.service.sync.logins.Operation
 import mozilla.components.service.sync.logins.ServerPassword
+import mozilla.components.service.sync.logins.getPersistenceOperation
+import mozilla.components.service.sync.logins.mergeWithLogin
 import mozilla.components.support.test.anyNonNull
 import mozilla.components.support.test.mock
 import org.junit.Assert.assertEquals
