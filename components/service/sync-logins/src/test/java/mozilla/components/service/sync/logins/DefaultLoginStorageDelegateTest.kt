@@ -1,49 +1,54 @@
-package mozilla.components.browser.engine.gecko.autofill
+package mozilla.components.service.sync.logins
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScope
-import mozilla.components.concept.engine.Login
-import mozilla.components.service.sync.logins.AsyncLoginsStorage
-import mozilla.components.service.sync.logins.DefaultLoginStorageDelegate
-import mozilla.components.service.sync.logins.Operation
-import mozilla.components.service.sync.logins.ServerPassword
-import mozilla.components.service.sync.logins.getPersistenceOperation
-import mozilla.components.service.sync.logins.mergeWithLogin
-import mozilla.components.support.test.anyNonNull
 import mozilla.components.support.test.mock
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import mozilla.components.concept.storage.Login
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.support.test.any
+import mozilla.components.support.test.robolectric.testContext
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @ExperimentalCoroutinesApi
+@RunWith(RobolectricTestRunner::class)
 class DefaultLoginStorageDelegateTest {
 
     private lateinit var loginsStorage: AsyncLoginsStorage
+    private lateinit var keystore: SecureAbove22Preferences
     private lateinit var delegateDefault: DefaultLoginStorageDelegate
     private lateinit var scope: TestCoroutineScope
 
     @Before
+    @Config(sdk = [21])
     fun before() {
         loginsStorage = mockLoginsStorage()
+        keystore = SecureAbove22Preferences(testContext, "name")
         scope = TestCoroutineScope()
-        delegateDefault = DefaultLoginStorageDelegate(loginsStorage, "password", scope)
+        delegateDefault = DefaultLoginStorageDelegate(loginsStorage, keystore, scope)
     }
 
     @Test
+    @Config(sdk = [21])
     fun `WHEN onLoginsUsed is used THEN loginStorage should be touched`() {
         scope.launch {
             val login = createLogin("guid")
 
             delegateDefault.onLoginUsed(login)
-            verify(loginsStorage, times(1)).touch(anyNonNull()).await()
+            verify(loginsStorage, times(1)).touch(any()).await()
         }
     }
 
     @Test
+    @Config(sdk = [21])
     fun `WHEN guid is null or empty THEN should create a new record`() {
         val serverPassword = createServerPassword()
 
@@ -55,6 +60,7 @@ class DefaultLoginStorageDelegateTest {
     }
 
     @Test
+    @Config(sdk = [21])
     fun `WHEN guid matches existing record AND saved record has an empty username THEN should update existing record`() {
         val serverPassword = createServerPassword(id = "1", username = "")
         val login = createLogin(guid = "1")
@@ -63,6 +69,7 @@ class DefaultLoginStorageDelegateTest {
     }
 
     @Test
+    @Config(sdk = [21])
     fun `WHEN guid matches existing record AND new username is different from saved THEN should create new record`() {
         val serverPassword = createServerPassword(id = "1", username = "old")
         val login = createLogin(guid = "1", username = "new")
@@ -71,6 +78,7 @@ class DefaultLoginStorageDelegateTest {
     }
 
     @Test
+    @Config(sdk = [21])
     fun `WHEN guid and username match THEN update existing record`() {
         val serverPassword = createServerPassword(id = "1", username = "username")
         val login = createLogin(guid = "1", username = "username")
@@ -79,6 +87,7 @@ class DefaultLoginStorageDelegateTest {
     }
 
     @Test
+    @Config(sdk = [21])
     fun `GIVEN login is non-null, non-empty WHEN mergeWithLogin THEN result should use values from login`() {
         val login = Login(
             guid = "guid",
@@ -88,28 +97,29 @@ class DefaultLoginStorageDelegateTest {
             username = "username",
             password = "password"
         )
-        val serverPassword = ServerPassword(
+        val serverPassword = createServerPassword(
             id = "spId",
             hostname = "spHost",
             username = "spUser",
             password = "spPassword",
             httpRealm = "spHttpRealm",
-            formSubmitURL = "spFormSubmitUrl"
+            formSubmitUrl = "spFormSubmitUrl"
         )
 
-        val expected = ServerPassword(
+        val expected = createServerPassword(
             id = "spId",
             hostname = "origin",
             username = "username",
             password = "password",
             httpRealm = "httpRealm",
-            formSubmitURL = "fao"
+            formSubmitUrl = "fao"
         )
 
         assertEquals(expected, serverPassword.mergeWithLogin(login))
     }
 
     @Test
+    @Config(sdk = [21])
     fun `GIVEN login has null values WHEN mergeWithLogin THEN those values should be taken from serverPassword`() {
         val login = Login(
             guid = null,
@@ -119,28 +129,29 @@ class DefaultLoginStorageDelegateTest {
             username = "username",
             password = "password"
         )
-        val serverPassword = ServerPassword(
+        val serverPassword = createServerPassword(
             id = "spId",
             hostname = "spHost",
             username = "spUser",
             password = "spPassword",
             httpRealm = "spHttpRealm",
-            formSubmitURL = "spFormSubmitUrl"
+            formSubmitUrl = "spFormSubmitUrl"
         )
 
-        val expected = ServerPassword(
+        val expected = createServerPassword(
             id = "spId",
             hostname = "origin",
             username = "username",
             password = "password",
             httpRealm = "spHttpRealm",
-            formSubmitURL = "spFormSubmitUrl"
+            formSubmitUrl = "spFormSubmitUrl"
         )
 
         assertEquals(expected, serverPassword.mergeWithLogin(login))
     }
 
     @Test
+    @Config(sdk = [21])
     fun `GIVEN login has empty values WHEN mergeWithLogin THEN those values should be taken from serverPassword`() {
         val login = Login(
             guid = "",
@@ -150,22 +161,22 @@ class DefaultLoginStorageDelegateTest {
             username = "",
             password = ""
         )
-        val serverPassword = ServerPassword(
+        val serverPassword = createServerPassword(
             id = "spId",
             hostname = "spHost",
             username = "spUser",
             password = "spPassword",
             httpRealm = "spHttpRealm",
-            formSubmitURL = "spFormSubmitUrl"
+            formSubmitUrl = "spFormSubmitUrl"
         )
 
-        val expected = ServerPassword(
+        val expected = createServerPassword(
             id = "spId",
             hostname = "spHost",
             username = "spUser",
             password = "spPassword",
             httpRealm = "spHttpRealm",
-            formSubmitURL = "spFormSubmitUrl"
+            formSubmitUrl = "spFormSubmitUrl"
         )
 
         assertEquals(expected, serverPassword.mergeWithLogin(login))
@@ -186,13 +197,13 @@ fun mockLoginsStorage(): AsyncLoginsStorage {
     setLockedWhen(loginsStorage.ensureLocked(), true)
     setLockedWhen(loginsStorage.lock(), true)
 
-    setLockedWhen(loginsStorage.ensureUnlocked(anyNonNull<ByteArray>()), false)
-    setLockedWhen(loginsStorage.ensureUnlocked(anyNonNull<String>()), false)
-    setLockedWhen(loginsStorage.unlock(anyNonNull<String>()), false)
-    setLockedWhen(loginsStorage.unlock(anyNonNull<ByteArray>()), false)
+    setLockedWhen(loginsStorage.ensureUnlocked(any<ByteArray>()), false)
+    setLockedWhen(loginsStorage.ensureUnlocked(any<String>()), false)
+    setLockedWhen(loginsStorage.unlock(any<String>()), false)
+    setLockedWhen(loginsStorage.unlock(any<ByteArray>()), false)
 
     `when`(loginsStorage.isLocked()).thenAnswer { isLocked }
-    `when`(loginsStorage.touch(anyNonNull())).thenAnswer { }
+    `when`(loginsStorage.touch(any())).thenAnswer { }
 
     return loginsStorage
 }
@@ -207,12 +218,20 @@ fun createLogin(guid: String?, username: String = "username") = Login(
 fun createServerPassword(
     id: String = "id",
     password: String = "password",
-    username: String = "username"
+    username: String = "username",
+    hostname: String = "hostname",
+    httpRealm: String = "httpRealm",
+    formSubmitUrl: String = "formsubmiturl",
+    usernameField: String = "usernameField",
+    passwordField: String = "passwordField"
+
 ) = ServerPassword(
     id = id,
-    hostname = "hostname",
+    hostname = hostname,
     password = password,
     username = username,
-    httpRealm = "httpRealm",
-    formSubmitURL = "formsubmiturl"
+    httpRealm = httpRealm,
+    formSubmitURL = formSubmitUrl,
+    usernameField = usernameField,
+    passwordField = passwordField
 )
