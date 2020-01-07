@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.prompts.logins
+package mozilla.components.service.sync.logins
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -15,7 +15,6 @@ import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.concept.storage.LoginValidationDelegate.Result
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
-import mozilla.components.service.sync.logins.AsyncLoginsStorage
 
 /**
  * A delegate that will check against [storage] to see if a given Login can be persisted, and return

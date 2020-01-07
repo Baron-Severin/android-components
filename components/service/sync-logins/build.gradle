@@ -38,6 +38,7 @@ dependencies {
 
     // Types defined in concept-sync are part of this module's public API.
     api project(':concept-sync')
+    api project(':lib-dataprotect')
 
     implementation project(':concept-storage')
     implementation project(':support-sync-telemetry')
