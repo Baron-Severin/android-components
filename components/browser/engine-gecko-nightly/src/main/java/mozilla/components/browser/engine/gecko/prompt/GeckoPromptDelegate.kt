@@ -12,7 +12,7 @@ import androidx.annotation.VisibleForTesting
 import mozilla.components.browser.engine.gecko.GeckoEngineSession
 import mozilla.components.browser.engine.gecko.autofill.toLogin
 import mozilla.components.browser.engine.gecko.autofill.toLoginEntry
-import mozilla.components.concept.engine.autofill.Login
+import mozilla.components.concept.storage.Login
 import mozilla.components.concept.engine.prompt.Choice
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.engine.prompt.PromptRequest.MenuChoice

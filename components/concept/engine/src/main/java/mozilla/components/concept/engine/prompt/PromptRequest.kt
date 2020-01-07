@@ -6,7 +6,7 @@ package mozilla.components.concept.engine.prompt
 
 import android.content.Context
 import android.net.Uri
-import mozilla.components.concept.engine.autofill.Login
+import mozilla.components.concept.storage.Login
 import mozilla.components.concept.engine.prompt.PromptRequest.Authentication.Level
 import mozilla.components.concept.engine.prompt.PromptRequest.Authentication.Method
 import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection.Type

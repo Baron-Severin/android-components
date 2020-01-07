@@ -24,9 +24,9 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.appservices.logins.LoginsStorageException
-import mozilla.components.concept.engine.autofill.Login
+import mozilla.components.concept.storage.Login
 import mozilla.components.feature.prompts.R
-import mozilla.components.feature.prompts.logins.LoginValidationDelegate
+import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.view.toScope
 import kotlin.reflect.KProperty

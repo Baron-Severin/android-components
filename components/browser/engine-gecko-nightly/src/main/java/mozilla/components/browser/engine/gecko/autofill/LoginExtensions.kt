@@ -5,7 +5,7 @@
 package mozilla.components.browser.engine.gecko.autofill
 
 import mozilla.appservices.logins.ServerPassword
-import mozilla.components.concept.engine.autofill.Login
+import mozilla.components.concept.storage.Login
 import org.mozilla.geckoview.LoginStorage
 
 /**

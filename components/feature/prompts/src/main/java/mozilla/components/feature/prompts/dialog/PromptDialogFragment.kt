@@ -5,7 +5,7 @@
 package mozilla.components.feature.prompts.dialog
 
 import androidx.fragment.app.DialogFragment
-import mozilla.components.feature.prompts.logins.LoginValidationDelegate
+import mozilla.components.concept.storage.LoginValidationDelegate
 
 internal const val KEY_SESSION_ID = "KEY_SESSION_ID"
 internal const val KEY_TITLE = "KEY_TITLE"
