@@ -116,5 +116,7 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
  * TODO remove these once the GV API is complete.
  */
 interface LoginStorageDelegate {
-    fun onLoginUsed(login: LoginEntry)
+    fun onLoginUsed(login: Login)
+    fun onLoginFetch(domain: String): List<Login>
+    fun onLoginSave(login: Login)
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginStorageDelegate
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.service.sync.logins.AsyncLoginsStorage
@@ -17,7 +18,6 @@ import mozilla.components.service.sync.logins.ServerPassword
 import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.LoginStorage
-import org.mozilla.geckoview.LoginStorage.LoginEntry
 
 /**
  * A type of persistence operation, either 'create' or 'update'.
@@ -26,6 +26,10 @@ import org.mozilla.geckoview.LoginStorage.LoginEntry
 enum class Operation { CREATE, UPDATE }
 
 private const val PASSWORDS_KEY = "passwords"
+
+class TodoNameMeGvDelegate: LoginStorage.Delegate {
+    // TODO forward things to DefaultLoginStorageDelegate
+}
 
 /**
  * [LoginStorage.Delegate] implementation.
@@ -40,7 +44,7 @@ class DefaultLoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
     keyStore: SecureAbove22Preferences,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
-) : LoginStorageDelegate, LoginStorage.Delegate {
+) : LoginStorageDelegate {
 
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
@@ -49,7 +53,7 @@ class DefaultLoginStorageDelegate(
      *
      * This is intended for use in telemetry, verification, and similar use cases.
      */
-    override fun onLoginUsed(login: LoginEntry) {
+    override fun onLoginUsed(login: Login) {
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
         scope.launch {
@@ -65,18 +69,13 @@ class DefaultLoginStorageDelegate(
      *
      * This is called when Gecko believes a field should be autofilled.
      */
-    override fun onLoginFetch(domain: String): GeckoResult<Array<LoginEntry>>? {
-        fun Array<LoginEntry>.toGeckoResult() =
-            GeckoResult.fromValue(this)
-
+    override fun onLoginFetch(domain: String): List<Login> {
         return runBlocking {
             // GV expects a synchronous response. Blocking here hasn't caused problems during
             // testing, but we should keep an eye on telemetry
             loginStorage.withUnlocked(password) {
                 loginStorage.getByBaseDomain(domain).await()
-                    .map { it.toLoginEntry() }
-                    .toTypedArray()
-                    .toGeckoResult()
+                    .map { it.toLogin() }
             }
         }
     }
@@ -85,14 +84,14 @@ class DefaultLoginStorageDelegate(
      * Called when a [login] should be saved or updated.
      */
     @Synchronized
-    override fun onLoginSave(login: LoginEntry) {
+    override fun onLoginSave(login: Login) {
         scope.launch {
             loginStorage.withUnlocked(password) {
-                val serverPassword = login.guid?.let { loginStorage.get(it) }?.await()
+                val existingLogin = login.guid?.let { loginStorage.get(it) }?.await()
 
-                when (getPersistenceOperation(login, serverPassword)) {
+                when (getPersistenceOperation(login, existingLogin)) {
                     Operation.UPDATE -> {
-                        serverPassword?.let { loginStorage.update(it.mergeWithLogin(login)).await() }
+                        existingLogin?.let { loginStorage.update(it.mergeWithLogin(login)).await() }
                     }
                     Operation.CREATE -> {
                         loginStorage.add(login.toServerPassword()).await()
@@ -108,7 +107,7 @@ class DefaultLoginStorageDelegate(
  * on the saved [ServerPassword] and new [Login].
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-fun getPersistenceOperation(newLogin: LoginEntry, savedLogin: ServerPassword?): Operation = when {
+fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Operation = when {
     newLogin.guid.isNullOrEmpty() || savedLogin == null -> Operation.CREATE
     // This means a password was saved for this site with a blank username. Update that record
     savedLogin.username.isEmpty() -> Operation.UPDATE
@@ -117,11 +116,11 @@ fun getPersistenceOperation(newLogin: LoginEntry, savedLogin: ServerPassword?): 
 }
 
 /**
- * Will use values from [login] if they are 1) non-null and 2) non-empty.  Otherwise, will fall
+ * Will use values from [this] if they are 1) non-null and 2) non-empty.  Otherwise, will fall
  * back to values from [this].
  */
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-fun ServerPassword.mergeWithLogin(login: LoginEntry): ServerPassword {
+fun ServerPassword.mergeWithLogin(login: Login): ServerPassword {
     infix fun String?.orUseExisting(other: String?) = if (this?.isNotEmpty() == true) this else other
     infix fun String?.orUseExisting(other: String) = if (this?.isNotEmpty() == true) this else other
 
