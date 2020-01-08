@@ -15,7 +15,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -24,11 +23,10 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.components.concept.storage.Login
-import mozilla.components.feature.prompts.R
 import mozilla.components.concept.storage.LoginValidationDelegate
+import mozilla.components.feature.prompts.R
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.view.toScope
-import java.io.IOException
 import kotlin.reflect.KProperty
 import com.google.android.material.R as MaterialR
 
@@ -163,12 +161,13 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                 if (password.isEmpty()) {
                     setViewState(
                         confirmButtonEnabled = false,
-                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
+                        passwordErrorText =
+                        context?.getString(R.string.mozac_feature_prompt_error_empty_password)
                     )
                 } else {
                     setViewState(
                         confirmButtonEnabled = true,
-                        passwordErrorText = R.string.mozac_EMPTY_STRING
+                        passwordErrorText = ""
                     )
                 }
             }
@@ -201,13 +200,20 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
             when (result) {
                 is LoginValidationDelegate.Result.CanBeCreated ->
-                    setViewState(confirmText = R.string.mozac_feature_prompt_save_confirmation)
+                    setViewState(
+                        confirmText =
+                        context?.getString(R.string.mozac_feature_prompt_save_confirmation)
+                    )
                 is LoginValidationDelegate.Result.CanBeUpdated ->
-                    setViewState(confirmText = R.string.mozac_feature_prompt_update_confirmation)
+                    setViewState(
+                        confirmText =
+                        context?.getString(R.string.mozac_feature_prompt_update_confirmation)
+                    )
                 is LoginValidationDelegate.Result.Error.EmptyPassword ->
                     setViewState(
                         confirmButtonEnabled = false,
-                        passwordErrorText = R.string.mozac_feature_prompt_error_empty_password
+                        passwordErrorText =
+                        context?.getString(R.string.mozac_feature_prompt_error_empty_password)
                     )
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
                     throw NotImplementedError("Unable to validate saved logins. Are you using " +
@@ -216,7 +222,8 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                     // TODO handle these errors more robustly. See:
                     // https://github.com/mozilla-mobile/fenix/issues/7545
                     setViewState(
-                        passwordErrorText = R.string.mozac_feature_prompt_error_unknown_cause
+                        passwordErrorText =
+                        context?.getString(R.string.mozac_feature_prompt_error_unknown_cause)
                     )
                 }
             }
@@ -224,12 +231,12 @@ internal class LoginDialogFragment : PromptDialogFragment() {
     }
 
     private fun setViewState(
-        @StringRes confirmText: Int? = null,
+        confirmText: String? = null,
         confirmButtonEnabled: Boolean? = null,
-        @StringRes passwordErrorText: Int? = null
+        passwordErrorText: String? = null
     ) {
         if (confirmText != null) {
-            view?.findViewById<Button>(R.id.save_confirm)?.text = context?.getString(confirmText)
+            view?.findViewById<Button>(R.id.save_confirm)?.text = confirmText
         }
 
         if (confirmButtonEnabled != null) {
@@ -238,7 +245,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
 
         if (passwordErrorText != null) {
             view?.findViewById<TextInputLayout>(R.id.password_text_input_layout)?.error =
-                context?.getString(passwordErrorText)
+                passwordErrorText
         }
     }
 
