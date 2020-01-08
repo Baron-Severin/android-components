@@ -10,9 +10,11 @@ import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.LoginStorage
 
 /**
- * TODO
+ * This class exists only to convert incoming [LoginEntry] arguments into [Login]s, then forward
+ * them to [storageDelegate]. This allows us to avoid duplicating [LoginStorageDelegate] code
+ * between different versions of GeckoView, by duplicating this wrapper instead.
  */
-class GeckoLoginDelegateWrapper(private val storageDelegate: LoginStorageDelegate): LoginStorage.Delegate {
+class GeckoLoginDelegateWrapper(private val storageDelegate: LoginStorageDelegate) : LoginStorage.Delegate {
     override fun onLoginSave(login: LoginStorage.LoginEntry) {
         storageDelegate.onLoginSave(login.toLogin())
     }
@@ -27,7 +29,8 @@ class GeckoLoginDelegateWrapper(private val storageDelegate: LoginStorageDelegat
     }
 
     /**
-     * TODO not yet in GV
+     * This method has not yet been implemented in GV. Once it has, we should add an override to it
+     * here.
      */
     fun onLoginUsed(login: LoginStorage.LoginEntry) {
         storageDelegate.onLoginUsed(login.toLogin())

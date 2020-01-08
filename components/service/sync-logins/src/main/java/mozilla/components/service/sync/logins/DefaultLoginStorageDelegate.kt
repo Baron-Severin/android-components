@@ -20,7 +20,7 @@ import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 enum class Operation { CREATE, UPDATE }
 
-private const val PASSWORDS_KEY = "passwords"
+internal const val PASSWORDS_KEY = "passwords"
 
 /**
  * [LoginStorage.Delegate] implementation.
@@ -39,11 +39,6 @@ class DefaultLoginStorageDelegate(
 
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
-    /**
-     * Called after a [login] has been autofilled.
-     *
-     * This is intended for use in telemetry, verification, and similar use cases.
-     */
     override fun onLoginUsed(login: Login) {
         val guid = login.guid
         if (guid == null || guid.isEmpty()) return
@@ -54,12 +49,6 @@ class DefaultLoginStorageDelegate(
         }
     }
 
-    /**
-     * Given a [domain], returns a [GeckoResult] of the matching [LoginEntry]s found in
-     * [loginStorage].
-     *
-     * This is called when Gecko believes a field should be autofilled.
-     */
     override fun onLoginFetch(domain: String): List<Login> {
         return runBlocking {
             // GV expects a synchronous response. Blocking here hasn't caused problems during
@@ -71,9 +60,6 @@ class DefaultLoginStorageDelegate(
         }
     }
 
-    /**
-     * Called when a [login] should be saved or updated.
-     */
     @Synchronized
     override fun onLoginSave(login: Login) {
         scope.launch {

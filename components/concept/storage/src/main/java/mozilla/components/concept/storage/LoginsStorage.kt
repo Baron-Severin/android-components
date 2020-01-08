@@ -111,12 +111,23 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
 }
 
 /**
- * Defines methods that will be implemented by [LoginStorage.Delegate] in future versions.
- *
- * TODO remove these once the GV API is complete.
+ * Used to handle [Login] storage so that the underlying engine doesn't have to. An instance of
+ * this should be attached to the Gecko runtime in order to be used.
  */
 interface LoginStorageDelegate {
+    /**
+     * Called after a [login] has been autofilled.
+     */
     fun onLoginUsed(login: Login)
+    /**
+     * Given a [domain], returns a [GeckoResult] of the matching [LoginEntry]s found in
+     * [loginStorage].
+     *
+     * This is called when the engine believes a field should be autofilled.
+     */
     fun onLoginFetch(domain: String): List<Login>
+    /**
+     * Called when a [login] should be saved or updated.
+     */
     fun onLoginSave(login: Login)
 }

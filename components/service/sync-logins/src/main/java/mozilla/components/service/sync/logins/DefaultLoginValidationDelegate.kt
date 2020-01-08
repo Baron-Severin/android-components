@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.async
 import mozilla.appservices.logins.InvalidLoginReason
 import mozilla.appservices.logins.InvalidRecordException
-import mozilla.appservices.logins.ServerPassword
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.concept.storage.LoginValidationDelegate.Result
@@ -26,27 +25,14 @@ class DefaultLoginValidationDelegate(
     private val scope: CoroutineScope = CoroutineScope(IO)
 ) : LoginValidationDelegate {
 
-    val PASSWORDS_KEY = "passwords" // TODO move (keep in sync w loginstoragedelegate)
-
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
 
+    @Suppress("ComplexMethod") // This method is not actually complex
     override fun validateCanPersist(login: Login): Deferred<Result> {
         return CoroutineScope(IO).async {
             try {
                 storage.ensureUnlocked(password().await()).await()
-                // TODO this should share logic from mozilla.components.browser.engine.gecko.autofill.Login.toServerPassword,
-                //  but it can't depend on GV. 'service-sync-logins' and 'concept-engine' have no good shared descendant
-                //  where this can live, where can it be moved?
-                storage.ensureValid(ServerPassword(
-                    id = login.guid ?: "",
-                    username = login.username,
-                    password = login.password,
-                    hostname = login.origin,
-                    formSubmitURL = login.formActionOrigin,
-                    httpRealm = login.httpRealm,
-                    usernameField = "",
-                    passwordField = ""
-                )).await()
+                storage.ensureValid(login.toServerPassword()).await()
                 Result.CanBeCreated
             } catch (e: InvalidRecordException) {
                 when (e.reason) {
@@ -55,7 +41,8 @@ class DefaultLoginValidationDelegate(
                     InvalidLoginReason.EMPTY_ORIGIN -> Result.Error.GeckoError(e)
                     InvalidLoginReason.BOTH_TARGETS -> Result.Error.GeckoError(e)
                     InvalidLoginReason.NO_TARGET -> Result.Error.GeckoError(e)
-                    InvalidLoginReason.ILLEGAL_FIELD_VALUE -> Result.Error.GeckoError(e) // TODO in what ways can the login fields be illegal? represent these in the UI
+                    // TODO in what ways can the login fields be illegal? represent these in the UI
+                    InvalidLoginReason.ILLEGAL_FIELD_VALUE -> Result.Error.GeckoError(e)
                 }
             } finally {
                 @Suppress("DeferredResultUnused") // No action needed

@@ -78,7 +78,6 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
             .password(password)
             .build()
 
-
         val geckoResult = GeckoResult<PromptResponse>()
         val onConfirmSave: (Login) -> Unit = { login ->
             geckoResult.complete(prompt.confirm(login.toLoginEntry()))
