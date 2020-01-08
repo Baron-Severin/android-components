@@ -212,9 +212,13 @@ internal class LoginDialogFragment : PromptDialogFragment() {
                 is LoginValidationDelegate.Result.Error.NotImplemented ->
                     throw NotImplementedError("Unable to validate saved logins. Are you using " +
                         "the correct ${LoginValidationDelegate::class}?")
-                is LoginValidationDelegate.Result.Error.GeckoError ->
-                    throw IOException("Unexpected problem while accessing storage. " +
-                        "Cause: ${result.exception}")
+                is LoginValidationDelegate.Result.Error.GeckoError -> {
+                    // TODO handle these errors more robustly. See:
+                    // https://github.com/mozilla-mobile/fenix/issues/7545
+                    setViewState(
+                        passwordErrorText = R.string.mozac_feature_prompt_error_unknown_cause
+                    )
+                }
             }
         }
     }
