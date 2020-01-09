@@ -5,6 +5,7 @@
 package mozilla.components.feature.prompts
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
@@ -54,7 +55,10 @@ import mozilla.components.concept.storage.NoopLoginValidationDelegate
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.feature.prompts.share.DefaultShareDelegate
 import mozilla.components.feature.prompts.share.ShareDelegate
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.lib.state.ext.flowScoped
+import mozilla.components.service.sync.logins.AsyncLoginsStorageAdapter
+import mozilla.components.service.sync.logins.DefaultLoginValidationDelegate
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 import mozilla.components.support.base.feature.PermissionsFeature
@@ -64,6 +68,14 @@ import java.util.Date
 
 @VisibleForTesting(otherwise = PRIVATE)
 internal const val FRAGMENT_TAG = "mozac_feature_prompt_dialog"
+
+fun getDelegate(context: Context): LoginValidationDelegate {
+    val storage = AsyncLoginsStorageAdapter.forDatabase(context.getDatabasePath("logins.sqlite").absolutePath)
+    val keystore = SecureAbove22Preferences(context, "pass").apply {
+        putString("passwords", "passwords")
+    }
+    return DefaultLoginValidationDelegate(storage, keystore)
+}
 
 /**
  * Feature for displaying native dialogs for html elements like: input type
@@ -114,7 +126,8 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+        loginValidationDelegate: LoginValidationDelegate = getDelegate(activity),
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Activity(activity),
@@ -132,7 +145,8 @@ class PromptFeature private constructor(
         customTabId: String? = null,
         fragmentManager: FragmentManager,
         shareDelegate: ShareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate: LoginValidationDelegate = NoopLoginValidationDelegate(),
+        loginValidationDelegate: LoginValidationDelegate = getDelegate(fragment.context!!),
         onNeedToRequestPermissions: OnNeedToRequestPermissions
     ) : this(
         container = PromptContainer.Fragment(fragment),
@@ -163,7 +177,8 @@ class PromptFeature private constructor(
         customTabId = customTabId,
         fragmentManager = fragmentManager,
         shareDelegate = DefaultShareDelegate(),
-        loginValidationDelegate = NoopLoginValidationDelegate(),
+//        loginValidationDelegate = NoopLoginValidationDelegate(),
+        loginValidationDelegate = getDelegate(activity!!),
         onNeedToRequestPermissions = onNeedToRequestPermissions
     )
 

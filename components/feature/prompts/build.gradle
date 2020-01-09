@@ -34,6 +34,9 @@ dependencies {
     implementation project(':support-ktx')
     implementation project(':support-utils')
     implementation project(':ui-icons')
+    implementation project(':ui-icons')
+    implementation project(':service-sync-logins')
+    implementation project(':lib-dataprotect')
 
     implementation Dependencies.androidx_core_ktx
     implementation Dependencies.androidx_lifecycle_extensions

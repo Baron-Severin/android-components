@@ -6,6 +6,7 @@ package mozilla.components.browser.engine.gecko
 
 import android.content.Context
 import android.util.AttributeSet
+import mozilla.components.browser.engine.gecko.autofill.GeckoLoginDelegateWrapper
 import mozilla.components.browser.engine.gecko.integration.LocaleSettingUpdater
 import mozilla.components.browser.engine.gecko.mediaquery.from
 import mozilla.components.browser.engine.gecko.mediaquery.toGeckoValue
@@ -33,6 +34,9 @@ import mozilla.components.concept.engine.webextension.WebExtensionDelegate
 import mozilla.components.concept.engine.webnotifications.WebNotificationDelegate
 import mozilla.components.concept.engine.webpush.WebPushDelegate
 import mozilla.components.concept.engine.webpush.WebPushHandler
+import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.service.sync.logins.AsyncLoginsStorageAdapter
+import mozilla.components.service.sync.logins.GeckoLoginStorageDelegate
 import org.json.JSONObject
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlocking
@@ -86,6 +90,13 @@ class GeckoEngine(
             throw RuntimeException("GeckoRuntime is shutting down")
         }
         trackingProtectionExceptionStore.restore()
+
+        val storage = AsyncLoginsStorageAdapter.forDatabase(context.getDatabasePath("logins.sqlite").absolutePath)
+        val keystore = SecureAbove22Preferences(context, "pass").apply {
+            putString("passwords", "passwords")
+        }
+        val delegate = GeckoLoginStorageDelegate(storage, keystore)
+        runtime.loginStorageDelegate = GeckoLoginDelegateWrapper(delegate)
     }
 
     /**

@@ -60,6 +60,9 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
         session: GeckoSession,
         prompt: PromptDelegate.LoginStoragePrompt
     ): GeckoResult<PromptResponse>? {
+
+        println("SEVTEST: onLoginStoragePrompt")
+
         fun LoginStorage.LoginEntry.toLogin() = Login(
             guid = guid,
             origin = origin,
