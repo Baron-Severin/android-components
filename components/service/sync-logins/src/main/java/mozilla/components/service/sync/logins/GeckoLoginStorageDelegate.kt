@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginStorageDelegate
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
+import mozilla.components.support.base.log.logger.Logger
 
 /**
  * A type of persistence operation, either 'create' or 'update'.
@@ -23,24 +24,42 @@ enum class Operation { CREATE, UPDATE }
 internal const val PASSWORDS_KEY = "passwords"
 
 /**
- * [LoginStorage.Delegate] implementation.
+ * [LoginStorageDelegate] implementation.
  *
  * An abstraction that handles the persistence and retrieval of [LoginEntry]s so that Gecko doesn't
  * have to.
  *
  * In order to use this class, attach it to the active [GeckoRuntime] as its `loginStorageDelegate`.
  * It is not designed to work with other engines.
+ *
+ * This class is part of a complex flow integrating Gecko and Application Services code, which is
+ * described here:
+ *
+ * - GV finds something on a page that it believes could be autofilled
+ * - GV calls [onLoginFetch]
+ *   - We retrieve [Login]s from all matching domains (if any) from [loginStorage]
+ *   - We return these [Login]s to GV
+ * - User submits their credentials
+ * - GV decides to save the login
+ *   - GV calls [onLoginSave] with a [Login]
+ *     - If this [Login] was autofilled, it is updated with new information but retains the same
+ *     [Login.guid]
+ *     - If this is a new [Login], its [Login.guid] will be an empty string
+ *   - We [CREATE] or [UPDATE] the [Login] in [loginStorage]
+ *     - If [CREATE], [loginStorage] generates a new guid for it
  */
-class DefaultLoginStorageDelegate(
+class GeckoLoginStorageDelegate(
     private val loginStorage: AsyncLoginsStorage,
     keyStore: SecureAbove22Preferences,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : LoginStorageDelegate {
 
     private val password = { scope.async { keyStore.getString(PASSWORDS_KEY)!! } }
+    private val logger = Logger("GeckoLoginStorageDelegate")
 
     override fun onLoginUsed(login: Login) {
         val guid = login.guid
+        // If the guid is null, we have no way of associating the login with any record in the DB
         if (guid == null || guid.isEmpty()) return
         scope.launch {
             loginStorage.withUnlocked(password) {
@@ -77,19 +96,25 @@ class DefaultLoginStorageDelegate(
             }
         }
     }
-}
 
-/**
- * Returns whether an existing login record should be [UPDATE]d or a new one [CREATE]d, based
- * on the saved [ServerPassword] and new [Login].
- */
-@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Operation = when {
-    newLogin.guid.isNullOrEmpty() || savedLogin == null -> Operation.CREATE
-    // This means a password was saved for this site with a blank username. Update that record
-    savedLogin.username.isEmpty() -> Operation.UPDATE
-    newLogin.username != savedLogin.username -> Operation.CREATE
-    else -> Operation.UPDATE
+    /**
+     * Returns whether an existing login record should be [UPDATE]d or a new one [CREATE]d, based
+     * on the saved [ServerPassword] and new [Login].
+     */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun getPersistenceOperation(newLogin: Login, savedLogin: ServerPassword?): Operation = when {
+        newLogin.guid.isNullOrEmpty() || savedLogin == null -> Operation.CREATE
+        newLogin.guid != savedLogin.id -> {
+            logger.debug("getPersistenceOperation called with a non-null `savedLogin` with" +
+                " a guid that does not match `newLogin`. This is unexpected. Falling back to create " +
+                "new login.")
+            Operation.CREATE
+        }
+        // This means a password was saved for this site with a blank username. Update that record
+        savedLogin.username.isEmpty() -> Operation.UPDATE
+        newLogin.username != savedLogin.username -> Operation.CREATE
+        else -> Operation.UPDATE
+    }
 }
 
 /**

@@ -4,11 +4,9 @@
 
 package mozilla.components.concept.storage
 
-import android.os.Parcelable
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import mozilla.components.concept.storage.LoginValidationDelegate.Result
-import kotlinx.android.parcel.Parcelize
 
 /**
  * Represents a login that can be used by autofill APIs.
@@ -16,7 +14,6 @@ import kotlinx.android.parcel.Parcelize
  * Note that much of this information can be partial (e.g., a user might save a password with a
  * blank username).
  */
-@Parcelize
 data class Login(
     /**
      * The unique identifier for this login entry.
@@ -47,7 +44,7 @@ data class Login(
      * The password for this login entry.
      */
     val password: String
-) : Parcelable
+)
 
 /**
  * Provides a method for checking whether or not a given login can be stored.
@@ -116,7 +113,7 @@ class NoopLoginValidationDelegate : LoginValidationDelegate {
  */
 interface LoginStorageDelegate {
     /**
-     * Called after a [login] has been autofilled.
+     * Called after a [login] has been autofilled into web content.
      */
     fun onLoginUsed(login: Login)
     /**

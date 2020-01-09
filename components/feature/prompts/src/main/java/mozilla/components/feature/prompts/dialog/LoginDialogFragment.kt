@@ -135,6 +135,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         usernameEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
                 username = editable.toString()
+                // Update accesses member state, so it must be called after username is set
                 update()
             }
 
@@ -156,6 +157,7 @@ internal class LoginDialogFragment : PromptDialogFragment() {
         passwordEditText.setText(password)
         passwordEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
+                // Note that password is accessed by `fun update`
                 password = editable.toString()
 
                 if (password.isEmpty()) {

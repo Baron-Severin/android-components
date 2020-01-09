@@ -29,7 +29,7 @@ class DefaultLoginValidationDelegate(
 
     @Suppress("ComplexMethod") // This method is not actually complex
     override fun validateCanPersist(login: Login): Deferred<Result> {
-        return CoroutineScope(IO).async {
+        return scope.async {
             try {
                 storage.ensureUnlocked(password().await()).await()
                 storage.ensureValid(login.toServerPassword()).await()

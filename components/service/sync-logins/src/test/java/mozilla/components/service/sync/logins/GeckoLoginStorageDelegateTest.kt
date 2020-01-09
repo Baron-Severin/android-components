@@ -20,11 +20,11 @@ import org.robolectric.annotation.Config
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
-class DefaultLoginStorageDelegateTest {
+class GeckoLoginStorageDelegateTest {
 
     private lateinit var loginsStorage: AsyncLoginsStorage
     private lateinit var keystore: SecureAbove22Preferences
-    private lateinit var delegateDefault: DefaultLoginStorageDelegate
+    private lateinit var delegate: GeckoLoginStorageDelegate
     private lateinit var scope: TestCoroutineScope
 
     @Before
@@ -33,7 +33,7 @@ class DefaultLoginStorageDelegateTest {
         loginsStorage = mockLoginsStorage()
         keystore = SecureAbove22Preferences(testContext, "name")
         scope = TestCoroutineScope()
-        delegateDefault = DefaultLoginStorageDelegate(loginsStorage, keystore, scope)
+        delegate = GeckoLoginStorageDelegate(loginsStorage, keystore, scope)
     }
 
     @Test
@@ -42,7 +42,7 @@ class DefaultLoginStorageDelegateTest {
         scope.launch {
             val login = createLogin("guid")
 
-            delegateDefault.onLoginUsed(login)
+            delegate.onLoginUsed(login)
             verify(loginsStorage, times(1)).touch(any()).await()
         }
     }
@@ -52,8 +52,8 @@ class DefaultLoginStorageDelegateTest {
     fun `WHEN guid is null or empty THEN should create a new record`() {
         val serverPassword = createServerPassword()
 
-        val fromNull = getPersistenceOperation(createLogin(guid = null), serverPassword)
-        val fromEmpty = getPersistenceOperation(createLogin(guid = ""), serverPassword)
+        val fromNull = delegate.getPersistenceOperation(createLogin(guid = null), serverPassword)
+        val fromEmpty = delegate.getPersistenceOperation(createLogin(guid = ""), serverPassword)
 
         assertEquals(Operation.CREATE, fromNull)
         assertEquals(Operation.CREATE, fromEmpty)
@@ -65,7 +65,7 @@ class DefaultLoginStorageDelegateTest {
         val serverPassword = createServerPassword(id = "1", username = "")
         val login = createLogin(guid = "1")
 
-        assertEquals(Operation.UPDATE, getPersistenceOperation(login, serverPassword))
+        assertEquals(Operation.UPDATE, delegate.getPersistenceOperation(login, serverPassword))
     }
 
     @Test
@@ -74,7 +74,7 @@ class DefaultLoginStorageDelegateTest {
         val serverPassword = createServerPassword(id = "1", username = "old")
         val login = createLogin(guid = "1", username = "new")
 
-        assertEquals(Operation.CREATE, getPersistenceOperation(login, serverPassword))
+        assertEquals(Operation.CREATE, delegate.getPersistenceOperation(login, serverPassword))
     }
 
     @Test
@@ -83,7 +83,7 @@ class DefaultLoginStorageDelegateTest {
         val serverPassword = createServerPassword(id = "1", username = "username")
         val login = createLogin(guid = "1", username = "username")
 
-        assertEquals(Operation.UPDATE, getPersistenceOperation(login, serverPassword))
+        assertEquals(Operation.UPDATE, delegate.getPersistenceOperation(login, serverPassword))
     }
 
     @Test

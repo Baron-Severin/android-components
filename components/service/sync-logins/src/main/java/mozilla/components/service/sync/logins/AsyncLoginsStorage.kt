@@ -291,7 +291,9 @@ interface AsyncLoginsStorage : AutoCloseable {
     /**
      * Checks if login already exists and is valid.
      *
-     * @rejectsWith [InvalidRecordException] On unexpected errors (IO failure, rust panics, etc)
+     * @rejectsWith [InvalidRecordException] On both expected errors (malformed [login], [login]
+     * already exists in store, etc. See [InvalidRecordException.reason] for details) and
+     * unexpected errors (IO failure, rust panics, etc)
      */
     fun ensureValid(login: ServerPassword): Deferred<Unit>
 
