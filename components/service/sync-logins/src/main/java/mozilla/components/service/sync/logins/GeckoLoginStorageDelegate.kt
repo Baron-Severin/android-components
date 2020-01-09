@@ -90,7 +90,9 @@ class GeckoLoginStorageDelegate(
                         existingLogin?.let { loginStorage.update(it.mergeWithLogin(login)).await() }
                     }
                     Operation.CREATE -> {
-                        loginStorage.add(login.toServerPassword()).await()
+                        // If an existing Login was autofilled, we want to clear its guid to
+                        // avoid updating its record
+                        loginStorage.add(login.copy(guid = "").toServerPassword()).await()
                     }
                 }
             }
