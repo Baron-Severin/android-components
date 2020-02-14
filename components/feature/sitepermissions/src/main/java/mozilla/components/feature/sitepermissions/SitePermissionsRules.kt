@@ -16,7 +16,9 @@ data class SitePermissionsRules(
     val camera: Action,
     val location: Action,
     val notification: Action,
-    val microphone: Action
+    val microphone: Action,
+    val autoplayAudible: Action,
+    val autoplayInaudible: Action
 ) {
     enum class Action {
         BLOCKED, ASK_TO_ALLOW;
@@ -48,6 +50,12 @@ data class SitePermissionsRules(
             }
             is Permission.ContentVideoCamera, is Permission.ContentVideoCapture -> {
                 camera
+            }
+            is Permission.ContentAutoPlayAudible -> {
+                autoplayAudible
+            }
+            is Permission.ContentAutoPlayInaudible -> {
+                autoplayInaudible
             }
             else -> ASK_TO_ALLOW
         }

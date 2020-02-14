@@ -26,6 +26,8 @@ import mozilla.components.browser.session.runWithSessionIdOrSelected
 import mozilla.components.concept.engine.permission.Permission
 import mozilla.components.concept.engine.permission.Permission.ContentAudioCapture
 import mozilla.components.concept.engine.permission.Permission.ContentAudioMicrophone
+import mozilla.components.concept.engine.permission.Permission.ContentAutoPlayAudible
+import mozilla.components.concept.engine.permission.Permission.ContentAutoPlayInaudible
 import mozilla.components.concept.engine.permission.Permission.ContentGeoLocation
 import mozilla.components.concept.engine.permission.Permission.ContentNotification
 import mozilla.components.concept.engine.permission.Permission.ContentVideoCamera
@@ -335,6 +337,12 @@ class SitePermissionsFeature(
             }
             is ContentVideoCamera, is ContentVideoCapture -> {
                 sitePermissions.copy(camera = status)
+            }
+            is ContentAutoPlayAudible -> {
+                sitePermissions.copy(autoplayAudible = status)
+            }
+            is ContentAutoPlayInaudible -> {
+                sitePermissions.copy(autoplayInaudible = status)
             }
             else ->
                 throw InvalidParameterException("$permission is not a valid permission.")

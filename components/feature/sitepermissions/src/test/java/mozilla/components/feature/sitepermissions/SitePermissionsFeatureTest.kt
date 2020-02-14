@@ -17,6 +17,8 @@ import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.permission.Permission
 import mozilla.components.concept.engine.permission.Permission.ContentAudioCapture
 import mozilla.components.concept.engine.permission.Permission.ContentAudioMicrophone
+import mozilla.components.concept.engine.permission.Permission.ContentAutoPlayAudible
+import mozilla.components.concept.engine.permission.Permission.ContentAutoPlayInaudible
 import mozilla.components.concept.engine.permission.Permission.ContentGeoLocation
 import mozilla.components.concept.engine.permission.Permission.ContentNotification
 import mozilla.components.concept.engine.permission.Permission.ContentVideoCamera
@@ -325,6 +327,8 @@ class SitePermissionsFeatureTest {
             ContentNotification(),
             ContentAudioCapture(),
             ContentAudioMicrophone(),
+            ContentAutoPlayAudible(),
+            ContentAutoPlayInaudible(),
             Generic(id = null)
         )
 
