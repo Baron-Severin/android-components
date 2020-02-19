@@ -21,9 +21,10 @@ data class SitePermissionsRules(
     val autoplayInaudible: Action
 ) {
     enum class Action {
-        BLOCKED, ASK_TO_ALLOW;
+        ALLOWED, BLOCKED, ASK_TO_ALLOW;
 
         fun toStatus(): SitePermissions.Status = when (this) {
+            ALLOWED -> SitePermissions.Status.ALLOWED
             BLOCKED -> SitePermissions.Status.BLOCKED
             ASK_TO_ALLOW -> SitePermissions.Status.NO_DECISION
         }

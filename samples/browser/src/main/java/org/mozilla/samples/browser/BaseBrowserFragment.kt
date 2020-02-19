@@ -25,6 +25,7 @@ import mozilla.components.feature.session.CoordinateScrollingFeature
 import mozilla.components.feature.session.SessionFeature
 import mozilla.components.feature.session.SwipeRefreshFeature
 import mozilla.components.feature.sitepermissions.SitePermissionsFeature
+import mozilla.components.feature.sitepermissions.SitePermissionsRules
 import mozilla.components.feature.toolbar.ToolbarFeature
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.LifecycleAwareFeature
@@ -162,6 +163,11 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler {
                 sessionManager = components.sessionManager,
                 sessionId = sessionId,
                 fragmentManager = requireFragmentManager()
+//                , TODO
+//                sitePermissionsRules = SitePermissionsRules(
+//                    autoplayAudible =
+//                    autoplayInaudible =
+//                )
             ) { permissions ->
                 requestPermissions(permissions, REQUEST_CODE_APP_PERMISSIONS)
             },

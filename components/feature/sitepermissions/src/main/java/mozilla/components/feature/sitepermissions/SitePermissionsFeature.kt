@@ -271,6 +271,10 @@ class SitePermissionsFeature(
     ): SitePermissionsDialogFragment? {
         val action = requireNotNull(sitePermissionsRules).getActionFrom(permissionRequest)
         return when (action) {
+            SitePermissionsRules.Action.ALLOWED -> {
+                permissionRequest.grant()
+                null
+            }
             SitePermissionsRules.Action.BLOCKED -> {
                 permissionRequest.reject()
                 session.contentPermissionRequest.consume { true }
@@ -580,7 +584,8 @@ private fun Permission.isSupported(): Boolean {
         is ContentGeoLocation,
         is ContentNotification,
         is ContentAudioCapture, is ContentAudioMicrophone,
-        is ContentVideoCamera, is ContentVideoCapture -> true
+        is ContentVideoCamera, is ContentVideoCapture,
+        is ContentAutoPlayAudible, is ContentAutoPlayInaudible -> true
         else -> false
     }
 }

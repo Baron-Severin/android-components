@@ -11,9 +11,7 @@ This means you might have to go searching through the dependency tree to get a f
 
 
 ## migration
-
 A ping sent after a Fennec->Fenix migration was completed.
-
 
 The following metrics are added to the ping:
 
