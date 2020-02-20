@@ -231,31 +231,28 @@ class SitePermissionsFeature(
             storage.findSitePermissionsBy(request.host)
         }
 
-        val prompt = if (shouldApplyRules(permissionFromStorage)) {
-            handleRuledFlow(request, session)
-        } else {
-            handleNoRuledFlow(permissionFromStorage, request, session)
+        val prompt = when (val handleFlow = getHandleFlow(permissionFromStorage, request)) {
+            is PermissionHandleFlow.UseGlobalRules -> handleRuledFlow(request, session, handleFlow.globalRules)
+            is PermissionHandleFlow.UseSiteSpecificRules -> handleSiteSpecificFlow(handleFlow.sitePermissions, request, session)
+            is PermissionHandleFlow.PromptUser -> createPrompt(request, session)
         }
+
         prompt?.show(fragmentManager, FRAGMENT_TAG)
         return prompt
     }
 
-    private fun handleNoRuledFlow(
-        permissionFromStorage: SitePermissions?,
+    private fun handleSiteSpecificFlow(
+        permissionFromStorage: SitePermissions,
         permissionRequest: PermissionRequest,
         session: Session
     ): SitePermissionsDialogFragment? {
-        return if (shouldShowPrompt(permissionRequest, permissionFromStorage)) {
-            createPrompt(permissionRequest, session)
+        if (permissionFromStorage.isGranted(permissionRequest)) {
+            permissionRequest.grant()
         } else {
-            if (permissionFromStorage.isGranted(permissionRequest)) {
-                permissionRequest.grant()
-            } else {
-                permissionRequest.reject()
-            }
-            session.contentPermissionRequest.consume { true }
-            null
+            permissionRequest.reject()
         }
+        session.contentPermissionRequest.consume { true }
+        return null
     }
 
     private fun shouldShowPrompt(
@@ -267,9 +264,10 @@ class SitePermissionsFeature(
 
     private fun handleRuledFlow(
         permissionRequest: PermissionRequest,
-        session: Session
+        session: Session,
+        sitePermissionsRules: SitePermissionsRules
     ): SitePermissionsDialogFragment? {
-        val action = requireNotNull(sitePermissionsRules).getActionFrom(permissionRequest)
+        val action = sitePermissionsRules.getActionFrom(permissionRequest)
         return when (action) {
             SitePermissionsRules.Action.ALLOWED -> {
                 permissionRequest.grant()
@@ -286,8 +284,25 @@ class SitePermissionsFeature(
         }
     }
 
-    private fun shouldApplyRules(permissionFromStorage: SitePermissions?) =
-        sitePermissionsRules != null && permissionFromStorage == null
+    private sealed class PermissionHandleFlow {
+        data class UseGlobalRules(val globalRules: SitePermissionsRules) : PermissionHandleFlow()
+        data class UseSiteSpecificRules(val sitePermissions: SitePermissions) : PermissionHandleFlow()
+        object PromptUser : PermissionHandleFlow()
+    }
+
+    private fun getHandleFlow(permissionFromStorage: SitePermissions?, request: PermissionRequest): PermissionHandleFlow {
+        val sitePermissionsRules = sitePermissionsRules
+        return when {
+            sitePermissionsRules != null && request.isForAutoplay() ->
+                // Autoplay rules cannot be set per site, so they always use global rules
+                PermissionHandleFlow.UseGlobalRules(sitePermissionsRules)
+            permissionFromStorage != null ->
+                PermissionHandleFlow.UseSiteSpecificRules(permissionFromStorage)
+            sitePermissionsRules != null ->
+                PermissionHandleFlow.UseGlobalRules(sitePermissionsRules)
+            else -> PermissionHandleFlow.PromptUser
+        }
+    }
 
     private fun PermissionRequest.doNotAskAgain(permissionFromStore: SitePermissions): Boolean {
         return permissions.any { permission ->
@@ -322,6 +337,10 @@ class SitePermissionsFeature(
             sitePermissions = updateSitePermissionsStatus(status, permission, sitePermissions)
         }
         return sitePermissions
+    }
+
+    private fun PermissionRequest.isForAutoplay(): Boolean = permissions.any {
+        it is ContentAutoPlayInaudible || it is ContentAutoPlayAudible
     }
 
     private fun updateSitePermissionsStatus(
